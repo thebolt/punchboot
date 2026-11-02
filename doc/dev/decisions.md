@@ -199,3 +199,14 @@ code (F-094) and no GIL held during USB I/O (F-009); ~550 lines of boilerplate (
 32 MiB write to the 8MP EVK is as fast as with the C library (~28.5 MiB/s, within noise).
 Cost: libusb now comes from someone else's wheels (libusb-package); a platform without them
 needs a system libusb. There is no C host library for embedding anymore.
+## D-022: Bounded model checking with CBMC for the central firmware code (2026-11-02)
+
+Proofs live in `tests/cbmc`, run at both firmware word sizes (32 and 64 bit) against the firmware
+libc headers, and are ordered by attacker reachability (`verification.md`). Results are stated as
+"no failed property up to bound N under the listed assumptions", never as unbounded proofs.
+Every harness has reachability goals, and every proof has a mutant it must find. The vendored
+libc and uuid are verified too. The CI job is not blocking until the proofs have been stable.
+Why: the unit and integration tests only check the inputs someone thought of. Most of the open
+security findings are bounds or wrap bugs in code that parses untrusted input, which is what
+bounded model checking finds. Note: D-022 and up may collide with other branches, renumber on
+merge.

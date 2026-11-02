@@ -17,6 +17,7 @@ CI runs these tests (D-006).
 | `tests/integration/` | pytest tests that drive `pb-host` through the `punchboot` Python package |
 | `tests/compat/` | Compatibility guards (D-008): `abi.txt` + `check_abi.py`, golden bpak images in `bpak/`, wire transcripts in `transcripts/`. See `compatibility.md` |
 | `scripts/ci/host-test.sh` | In-container entry point: pip install, cmake, ctest |
+| `tests/cbmc/` | CBMC proofs, `scripts/pbdev cbmc`. See `verification.md` |
 
 ## Running
 

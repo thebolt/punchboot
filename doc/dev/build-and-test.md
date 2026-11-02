@@ -40,18 +40,20 @@ make BOARD=src/board/<x> KCONFIG_CONFIG=configs/<x>_defconfig CROSS_COMPILE=<arm
 - the bpak v0.9.3 CLI
 - gdisk and CMocka
 - `file`, which Coverity's cov-build needs (F-097)
+- CBMC 6.6 (`cbmc`, `goto-cc`) for `tests/cbmc` (`verification.md`)
 - a Python venv with click >= 8.2, semver, pytest and gcovr 8.3 (pinned: 8.7 crashes)
 
 ```sh
 scripts/pbdev test [cmake args]   # host build + all tests, see testing.md
 scripts/pbdev firmware <board>    # scripts/ci/build-firmware.sh
+scripts/pbdev cbmc [args]         # CBMC proofs, scripts/ci/cbmc.sh
 scripts/pbdev shell               # interactive
 scripts/pbdev run <cmd...>
 ```
 
 - The image tag is a hash of `docker/`, so it rebuilds automatically when the Dockerfile changes.
 - The repo is mounted at the same path as on the host, and commands run as your uid.
-- `BUILD_DIR` and `CTEST_ARGS` are passed through into the container.
+- `BUILD_DIR`, `CTEST_ARGS` and `JOBS` are passed through into the container.
 - If Docker says "permission denied", the shell predates being added to the `docker` group.
   Use `sg docker -c "scripts/pbdev ..."` or log in again.
 
@@ -110,6 +112,8 @@ a ruff bump can break the check (it happened in 2.7.0).
   - **firmware:** jiffy, imx8dxlevk, imx8mevk and imx8mpevk `pb.bin`. The i.MX8M boards are built
     with placeholder DDR training firmware (`IMX8M_FW_DIR` points `build-firmware.sh` at the real
     one, inside the repository): a compile check only.
+  - **cbmc:** the CBMC proofs and mutants, 32 and 64 bit, logs as the `cbmc-logs-*` artifacts.
+    Not blocking yet (D-022).
   - **coverity:** cov-build of jiffy inside the container. Only on pushes to master in
     jonasblixt/punchboot, because it needs `COVERITY_SCAN_TOKEN`.
 - `punchboot-tools.yml`: the package is pure Python (D-021), so `pipx run build` makes one

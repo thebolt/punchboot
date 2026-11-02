@@ -1,6 +1,6 @@
 # Status
 
-_Last updated: 2026-10-29_
+_Last updated: 2026-11-02_
 
 ## Current focus
 
@@ -50,6 +50,10 @@ the host half of 4 are done (`compatibility.md`, Guards).
   11,000 lines and 7 MB. Until the incoming boards are in, code without an in-tree user stays
   (D-020, temporary). Bugs found on the way: F-143, F-144, F-147 (open). Left: de-duplication
   F-145 (porting API part on hold), ATF F-146, boards F-033/F-051.
+
+**CBMC (branch `cbmc`, D-022):** Phase 0 is done: `tests/cbmc`, `scripts/pbdev cbmc`, the CI job
+(not blocking), vacuity and mutation checks, and the `crc` and `wire` proofs at 32 and 64 bit.
+Next is Phase 1 (bpak, der, slc/rot + platform helpers, libc, uuid). Plan in `verification.md`.
 
 **Hard rule (D-008):** never break wire or bpak compatibility. See `compatibility.md`.
 

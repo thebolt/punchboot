@@ -23,6 +23,7 @@ Do not read these up front. Open only what the task needs.
 | `doc/dev/arch-firmware.md` | Working in `src/`, `include/` |
 | `doc/dev/arch-host-tools.md` | Working in `tools/`, wire protocol, Python package |
 | `doc/dev/testing.md` | Writing or running tests (host unit/integration tests) |
+| `doc/dev/verification.md` | CBMC proofs (`tests/cbmc`): what is proven, assumptions, plan |
 | `doc/dev/build-and-test.md` | Building firmware, the dev container, CI, releasing |
 | `doc/dev/imx8m-ddr.md` | i.MX8M DRAM init (uMCTL2, DWC LPDDR4 PHY), its golden trace test |
 | `doc/dev/bpak.md` | Anything touching bpak or image signing/verification |
