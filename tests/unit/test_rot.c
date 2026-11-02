@@ -234,12 +234,23 @@ static void test_slc_without_callbacks(void **state)
     static const struct slc_config cfg = { 0 };
     (void)state;
 
-    /* A board without set_configuration_locked, but with set_eol, would
-     * crash in slc_set_eol() (F-001), so that is not tested */
     assert_int_equal(slc_init(&cfg), PB_OK);
     assert_int_equal(slc_read_status(), -PB_ERR_NOT_SUPPORTED);
     assert_int_equal(slc_set_configuration(), -PB_ERR_NOT_SUPPORTED);
     assert_int_equal(slc_set_configuration_locked(), -PB_ERR_NOT_SUPPORTED);
+    assert_int_equal(slc_set_eol(), -PB_ERR_NOT_SUPPORTED);
+}
+
+static void test_slc_eol_without_callback(void **state)
+{
+    static const struct slc_config cfg = {
+        .set_configuration_locked = fake_set_configuration_locked,
+    };
+    (void)state;
+
+    /* slc_set_eol() checked set_configuration_locked and called the NULL
+     * set_eol (F-001) */
+    assert_int_equal(slc_init(&cfg), PB_OK);
     assert_int_equal(slc_set_eol(), -PB_ERR_NOT_SUPPORTED);
 }
 
@@ -275,6 +286,7 @@ int main(void)
         cmocka_unit_test(test_rot_revoke),
         cmocka_unit_test(test_slc_not_initialized),
         cmocka_unit_test(test_slc_without_callbacks),
+        cmocka_unit_test(test_slc_eol_without_callback),
         cmocka_unit_test(test_slc_life_cycle),
     };
 

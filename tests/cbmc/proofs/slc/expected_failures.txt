@@ -1,4 +1,0 @@
-# slc_set_eol checks set_configuration_locked but calls set_eol, which can be
-# NULL.
-line 50 dereference failure:                                   # F-001
-line 50 dereferenced function pointer must be one of   # F-001 (the NULL target)
