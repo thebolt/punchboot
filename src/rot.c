@@ -51,7 +51,7 @@ int rot_read_key_status(key_id_t id)
 size_t rot_no_of_keys(void)
 {
     if (!cfg)
-        return -PB_ERR_NOT_SUPPORTED;
+        return 0;
     return cfg->key_map_length;
 }
 

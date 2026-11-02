@@ -91,7 +91,7 @@ static void test_rot_not_initialized(void **state)
     (void)state;
 
     assert_int_equal(rot_read_key_status(KEY_P256), -PB_ERR_NOT_SUPPORTED);
-    assert_int_equal((int)rot_no_of_keys(), -PB_ERR_NOT_SUPPORTED);
+    assert_int_equal(rot_no_of_keys(), 0);
     assert_int_equal(rot_read_key_status_by_idx(0), -PB_ERR_NOT_SUPPORTED);
     assert_int_equal((int)rot_key_idx_to_id(0), -PB_ERR_NOT_SUPPORTED);
     assert_int_equal(rot_revoke_key(KEY_P256), -PB_ERR_NOT_SUPPORTED);
