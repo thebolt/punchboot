@@ -12,6 +12,7 @@
 *.pbi
 *.gz
 *.patch
+!tests/cbmc/mutants/*.patch
 /build-*
 cov-int
 cov.xml

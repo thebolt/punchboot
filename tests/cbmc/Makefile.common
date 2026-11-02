@@ -1,0 +1,109 @@
+# Punch BOOT
+#
+# Copyright (C) 2026 Actia Nordic AB, Marten Svanfeldt <marten.svanfeldt@actia.se>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# Shared rules for the CBMC proofs. A proof directory has a Makefile like
+#
+#   PROOF   = crc
+#   SOURCES = $(ROOT)/src/lib/crc.c
+#   UNWIND  = 10
+#   include ../../Makefile.common
+#
+# Variables:
+#   PROOF      Name of the proof (output file names)
+#   SOURCES    Firmware sources under proof (harness.c is added automatically)
+#   UNWIND     Global --unwind bound (plus --unwinding-assertions)
+#   EXTRA_INC  Extra include flags
+#   EXTRA_DEFS Extra defines
+#   CBMC_EXTRA Extra flags for cbmc (e.g. --unwindset, --object-bits)
+#   CHECK_FLAGS_OFF Default checks to turn off, e.g. --unsigned-overflow-check
+#              for code that wraps on purpose. Say why in the proof Makefile.
+#   MODELS     Models linked into the proof (default: stubs/string_models.c).
+#              The libc proofs set it empty to verify src/lib/libc itself.
+#
+# Environment / command line:
+#   WORD=32|64  ILP32 (aarch32, i.MX6UL/RT) or LP64 (aarch64, i.MX8) (default 32)
+#   BUILD=dir   Output directory, also holds the generated config.h
+#
+# Everything is compiled against the firmware libc headers (include/libc), not
+# the host libc, so type widths are those of the real targets.
+
+ROOT      := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/../..)
+WORD      ?= 32
+BUILD     ?= $(ROOT)/build-cbmc
+CBMC      ?= cbmc
+GOTO_CC   ?= goto-cc
+TIMEOUT   ?= 600
+
+ifeq ($(WORD),32)
+LIBC_ARCH := aarch32
+else ifeq ($(WORD),64)
+LIBC_ARCH := aarch64
+else
+$(error WORD must be 32 or 64)
+endif
+
+MODELS    ?= $(ROOT)/tests/cbmc/stubs/string_models.c
+
+OUT       := $(BUILD)/$(PROOF)-$(WORD)
+CONFIG_H  := $(BUILD)/config.h
+
+INC := -nostdinc \
+       -I $(ROOT)/tests/cbmc \
+       -I $(ROOT)/include/libc \
+       -I $(ROOT)/include/libc/$(LIBC_ARCH) \
+       -I $(ROOT)/include \
+       -I $(ROOT)/src \
+       -I $(BUILD) \
+       $(EXTRA_INC)
+
+DEFS := -DPB_CBMC=1 -DPB_CBMC_WORD=$(WORD) -DLOGLEVEL=0 $(EXTRA_DEFS)
+
+DEFAULT_CHECKS := --bounds-check \
+                  --pointer-check \
+                  --pointer-primitive-check \
+                  --signed-overflow-check \
+                  --unsigned-overflow-check \
+                  --conversion-check \
+                  --undefined-shift-check \
+                  --pointer-overflow-check \
+                  --div-by-zero-check
+
+CHECK_FLAGS := $(filter-out $(CHECK_FLAGS_OFF),$(DEFAULT_CHECKS))
+
+CBMC_FLAGS = --function harness $(CHECK_FLAGS) --unwind $(UNWIND) \
+             --unwinding-assertions $(CBMC_EXTRA)
+
+.PHONY: all check cover clean
+
+all: check cover
+
+$(CONFIG_H):
+	mkdir -p $(BUILD)
+	cd $(ROOT) && KCONFIG_CONFIG=configs/host_defconfig python3 scripts/genconfig.py \
+	    --header-path $(CONFIG_H) --config-out $(BUILD)/.config src/Kconfig
+
+$(OUT).gb: harness.c $(SOURCES) $(MODELS) $(CONFIG_H)
+	mkdir -p $(BUILD)
+	$(GOTO_CC) -m$(WORD) -std=gnu99 $(INC) $(DEFS) harness.c $(SOURCES) $(MODELS) -o $@
+
+$(OUT).cover.gb: harness.c $(SOURCES) $(MODELS) $(CONFIG_H)
+	mkdir -p $(BUILD)
+	$(GOTO_CC) -m$(WORD) -std=gnu99 $(INC) $(DEFS) -DPB_CBMC_COVER=1 harness.c $(SOURCES) $(MODELS) -o $@
+
+# Property checks. Fails if any assertion fails or an unwinding bound is too low.
+check: $(OUT).gb
+	timeout $(TIMEOUT) $(CBMC) $< $(CBMC_FLAGS) 2>&1 | tee $(OUT).log | tail -n 4
+	@grep -q "VERIFICATION SUCCESSFUL" $(OUT).log
+
+# Vacuity guard: every PB_COVER() goal in the harness must be reachable.
+cover: $(OUT).cover.gb
+	timeout $(TIMEOUT) $(CBMC) $< --function harness --unwind $(UNWIND) \
+	    --cover cover $(CBMC_EXTRA) 2>&1 | tee $(OUT).cover.log | tail -n 3
+	@grep -q "covered" $(OUT).cover.log || { echo "no PB_COVER goals in the harness"; exit 1; }
+	@! grep -q "UNSATISFIED" $(OUT).cover.log
+
+clean:
+	rm -f $(OUT).gb $(OUT).cover.gb $(OUT).log $(OUT).cover.log

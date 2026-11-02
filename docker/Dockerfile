@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         bc \
         build-essential \
         ca-certificates \
+        cbmc \
         cmake \
         curl \
         file \
@@ -38,6 +39,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         uuid-dev \
         xxd \
     && rm -rf /var/lib/apt/lists/*
+
+# CBMC (tests/cbmc) needs 6.x for the property checks and --cover the proofs use
+RUN cbmc --version \
+    && cbmc --version | grep -qE '^[6-9]\.'
 
 # Mbed TLS sources, compiled into the firmware via MBEDTLS_DIR.
 RUN curl -fsSL -o /tmp/mbedtls.tar.gz \

@@ -1,0 +1,13 @@
+# proof: crc
+# Table index masked to 7 bits: crc32 differs from the reference.
+--- a/src/lib/crc.c	2026-11-02 14:51:51.829621346 +0100
++++ b/src/lib/crc.c	2026-11-02 14:51:51.833063716 +0100
+@@ -133,7 +133,7 @@
+     const uint8_t *p = buf;
+
+     while (size--)
+-        crc = crc32Table[(crc ^ *p++) & 0xff] ^ (crc >> 8);
++        crc = crc32Table[(crc ^ *p++) & 0x7f] ^ (crc >> 8);
+
+     return crc;
+ }

@@ -1,0 +1,12 @@
+# proof: wire
+# SLC_READ added to the commands that need no authentication.
+--- a/src/wire.c	2026-11-02 14:51:51.848755474 +0100
++++ b/src/wire.c	2026-11-02 14:51:51.864656985 +0100
+@@ -130,6 +130,7 @@
+         result = false;
+         break;
+     case PB_CMD_AUTHENTICATE:
++    case PB_CMD_SLC_READ:
+         result = false;
+         break;
+     default:
