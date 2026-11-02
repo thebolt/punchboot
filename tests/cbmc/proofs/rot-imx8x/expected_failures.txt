@@ -1,4 +1,0 @@
-# imx8x_slc_read_status ignores the return code of sc_seco_chip_info. If the
-# call fails, lc is uninitialized and the device can read as not locked, which
-# turns off the command mode authentication on a closed device.
-fail closed when SECO cannot be asked    # F-152

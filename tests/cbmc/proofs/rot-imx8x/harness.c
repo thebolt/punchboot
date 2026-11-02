@@ -15,7 +15,7 @@
  *    OEM closed life cycle (128); if SECO cannot be asked, the result is an
  *    error or LOCKED (fail closed: anything else opens command mode, D-011).
  *  - set_configuration_locked only moves the life cycle forward with the SRK
- *    fused.
+ *    fused, and fails without moving it when SECO cannot be asked.
  * Assumptions: param1 < 4 (four SRK slots).
  * Stubs: SECO calls return any error code and only write their outputs on
  * success; fuse reads and the SRK check return any value.
@@ -124,4 +124,6 @@ void harness(void)
     PB_COVER(forwarded == 1);
     if (forwarded)
         __CPROVER_assert(srk_fused && rc == PB_OK, "life cycle forwarded only with the SRK fused");
+    if (chip_info_rc != SC_ERR_NONE && srk_fused)
+        __CPROVER_assert(rc < 0 && !forwarded, "no forward when SECO cannot be asked");
 }
