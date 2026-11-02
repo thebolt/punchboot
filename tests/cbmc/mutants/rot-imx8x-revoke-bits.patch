@@ -1,0 +1,13 @@
+# proof: rot-imx8x
+# Key status reads revoke bits 7..10 instead of 8..11.
+--- a/src/plat/imx8x/rot_helpers.c
++++ b/src/plat/imx8x/rot_helpers.c
+@@ -83,7 +83,7 @@
+         return rc;
+ 
+     uint32_t revoke_value = (1 << key->param1);
+-    uint8_t rom_key_mask = (current_revoke_bits >> 8) & 0x0f;
++    uint8_t rom_key_mask = (current_revoke_bits >> 7) & 0x0f;
+ 
+     if ((rom_key_mask & revoke_value) == revoke_value)
+         return -PB_ERR_KEY_REVOKED;

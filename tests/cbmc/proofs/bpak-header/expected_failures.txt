@@ -1,0 +1,3 @@
+# size + pad_bytes wraps u64 in the alignment check. The check result is still
+# right (2^64 is a multiple of 512), but such a header is accepted.
+arithmetic overflow on unsigned + in p->size + # F-149

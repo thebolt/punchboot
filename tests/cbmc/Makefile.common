@@ -20,7 +20,7 @@
 #   CBMC_EXTRA Extra flags for cbmc (e.g. --unwindset, --object-bits)
 #   CHECK_FLAGS_OFF Default checks to turn off, e.g. --unsigned-overflow-check
 #              for code that wraps on purpose. Say why in the proof Makefile.
-#   MODELS     Models linked into the proof (default: stubs/string_models.c).
+#   MODELS     Models linked into the proof (default: stubs/string_models.c, log.c).
 #              The libc proofs set it empty to verify src/lib/libc itself.
 #
 # Environment / command line:
@@ -45,7 +45,7 @@ else
 $(error WORD must be 32 or 64)
 endif
 
-MODELS    ?= $(ROOT)/tests/cbmc/stubs/string_models.c
+MODELS    ?= $(ROOT)/tests/cbmc/stubs/string_models.c $(ROOT)/tests/cbmc/stubs/log.c
 
 OUT       := $(BUILD)/$(PROOF)-$(WORD)
 CONFIG_H  := $(BUILD)/config.h
@@ -93,17 +93,21 @@ $(OUT).cover.gb: harness.c $(SOURCES) $(MODELS) $(CONFIG_H)
 	mkdir -p $(BUILD)
 	$(GOTO_CC) -m$(WORD) -std=gnu99 $(INC) $(DEFS) -DPB_CBMC_COVER=1 harness.c $(SOURCES) $(MODELS) -o $@
 
-# Property checks. Fails if any assertion fails or an unwinding bound is too low.
+# Property checks. Fails if a property fails that is not listed in
+# expected_failures.txt (known bugs, with their finding id), if a listed one no
+# longer fails, or if an unwinding bound is too low.
 check: $(OUT).gb
-	timeout $(TIMEOUT) $(CBMC) $< $(CBMC_FLAGS) 2>&1 | tee $(OUT).log | tail -n 4
-	@grep -q "VERIFICATION SUCCESSFUL" $(OUT).log
+	timeout $(TIMEOUT) $(CBMC) $< $(CBMC_FLAGS) > $(OUT).log 2>&1 || true
+	@tail -n 3 $(OUT).log
+	@python3 $(ROOT)/tests/cbmc/check_result.py $(OUT).log $(WORD) expected_failures.txt
 
 # Vacuity guard: every PB_COVER() goal in the harness must be reachable.
 cover: $(OUT).cover.gb
 	timeout $(TIMEOUT) $(CBMC) $< --function harness --unwind $(UNWIND) \
 	    --cover cover $(CBMC_EXTRA) 2>&1 | tee $(OUT).cover.log | tail -n 3
 	@grep -q "covered" $(OUT).cover.log || { echo "no PB_COVER goals in the harness"; exit 1; }
-	@! grep -q "UNSATISFIED" $(OUT).cover.log
+	@grep -q "covered (100.0%)" $(OUT).cover.log || \
+	    { grep "coverage.*FAILED" $(OUT).cover.log; echo "unreachable cover goals"; exit 1; }
 
 clean:
 	rm -f $(OUT).gb $(OUT).cover.gb $(OUT).log $(OUT).cover.log

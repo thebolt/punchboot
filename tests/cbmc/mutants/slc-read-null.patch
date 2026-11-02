@@ -1,0 +1,13 @@
+# proof: slc
+# slc_read_status does not check the callback.
+--- a/src/slc.c
++++ b/src/slc.c
+@@ -20,7 +20,7 @@
+ 
+ slc_t slc_read_status(void)
+ {
+-    if (!cfg || !cfg->read_status)
++    if (!cfg)
+         return -PB_ERR_NOT_SUPPORTED;
+ 
+     return cfg->read_status();

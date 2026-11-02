@@ -1,0 +1,13 @@
+# proof: rot-imx6ul
+# Revoke burns the next fuse word.
+--- a/src/plat/imx6ul/rot_helpers.c
++++ b/src/plat/imx6ul/rot_helpers.c
+@@ -38,7 +38,7 @@
+     revoke_value |= current_revoke_bits;
+     LOG_DBG("Updating fuse to 0x%x", revoke_value);
+ 
+-    return imx_ocotp_write(IMX6UL_FUSE_REVOKE_BANK, IMX6UL_FUSE_REVOKE_WORD, revoke_value);
++    return imx_ocotp_write(IMX6UL_FUSE_REVOKE_BANK, IMX6UL_FUSE_REVOKE_WORD + 1, revoke_value);
+ }
+ 
+ int imx6ul_read_key_status(const struct rot_key *key)

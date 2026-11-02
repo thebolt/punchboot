@@ -1,0 +1,13 @@
+# proof: der-ecsig
+# The INTEGER length is not checked against the input.
+--- a/src/lib/der_helpers.c
++++ b/src/lib/der_helpers.c
+@@ -81,8 +81,6 @@
+     if (rc != PB_OK)
+         return rc;
+ 
+-    if (sz > (size_t)(end - *p))
+-        return -PB_ERR_ASN1;
+ 
+     const uint8_t *value = *p;
+     *p += sz;

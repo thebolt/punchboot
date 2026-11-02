@@ -25,7 +25,12 @@ How to run and add proofs: `tests/cbmc/README.md`.
   undefined shift, pointer overflow, division by zero, and unwinding assertions (a too-low loop
   bound fails the proof). A proof may turn a check off with `CHECK_FLAGS_OFF` and a comment why.
 - Vacuity: every harness has `PB_COVER()` goals for the paths that must be reachable. `make cover`
-  fails if one is unreachable or if there are none.
+  fails if one is unreachable or if there are none. In the cover build the harness assertions are
+  compiled out, because CBMC turns assertions into assumptions there and a known failure would
+  cut every path after it.
+- Globals start as zero in CBMC like in C. Harnesses give stub state and module state any value
+  explicitly where that matters (`pb_ocotp_havoc()`).
+- The log macros print through `tests/cbmc/stubs/log.c` (no output, arguments still evaluated).
 - Mutants: `tests/cbmc/mutants/*.patch` are bugs that a proof must find (only a counterexample
   counts, not a build error). `scripts/pbdev cbmc --mutants` applies each to a scratch copy.
 - CI: the `cbmc` job in `build.yml` runs the proofs and the mutants for both word sizes and uploads
@@ -34,12 +39,27 @@ How to run and add proofs: `tests/cbmc/README.md`.
 
 ## Status
 
-| Proof | Target | Properties | Bounds | Time (32/64) |
-|---|---|---|---|---|
-| `crc` | `src/lib/crc.c` | Memory safety; one step equals the bitwise CRC-32 (so all lengths, by induction); incremental `crc32(a‖b)` | len ≤ 16, incremental ≤ 2 | 22 s / 22 s |
-| `wire` | `src/wire.c` | `valid_command` is exactly magic + range; only IDENTIFIER_READ and AUTHENTICATE need no auth; `init_*2` size checks, no write outside the struct | none (fully symbolic structs) | 3 s / 5 s |
+| Proof | Target | Properties | Bounds | Known failures | Time (32/64) |
+|---|---|---|---|---|---|
+| `crc` | `src/lib/crc.c` | Memory safety; one step equals the bitwise CRC-32 (so all lengths, by induction); incremental `crc32(a‖b)` | len ≤ 16, incremental ≤ 2 | | 22 s / 22 s |
+| `wire` | `src/wire.c` | `valid_command` is exactly magic + range; only IDENTIFIER_READ and AUTHENTICATE need no auth; `init_*2` size checks, no write outside the struct | none (fully symbolic structs) | | 3 s / 5 s |
+| `bpak-header` | `bpak_valid_header` (pre-auth) | No UB for any 4 KiB header; OK implies magic, hash kind, alignment and metadata bounds for the slots before the first empty one | none | F-149 | 55 s / 55 s |
+| `bpak-signature` | `bpak_copyz_signature` (pre-auth) | No access outside the header or the output buffer; OK only for 0 < sz ≤ min(512, buffer); signature copied, area and size zeroed; header unchanged on error | buffer ≤ 1 KiB | | 5 s / 5 s |
+| `bpak-getters` | `bpak_get_meta`, `_anyref`, `bpak_get_part` | Returned entry is a header slot with the requested id/ref; checked slots have metadata in bounds | valid header | F-148, F-149 | 83 s / 83 s |
+| `bpak-part` | `bpak_part_size`, `bpak_part_offset` | No wrap or truncation; offset = 4096 + earlier part sizes | any header; offset for the first 3 slots | F-148, F-149 | 42 s / 223 s |
+| `der-ecsig` | `der_ecsig_to_rs` (pre-auth, CAAM) | No access outside sig, r, s for any input; OK implies a SEQUENCE | sig ≤ 24 bytes, curve length ≤ 8 (see harness) | | 28 s / 38 s |
+| `der-pubkey` | `der_ec_public_key_data` (trusted keystore) | Memory safety | key ≤ 160 bytes | F-066 | 3 s / 5 s |
+| `slc` | `src/slc.c` | Without a config or callback: NOT_SUPPORTED, no NULL call | none | F-001 | 1 s / 1 s |
+| `rot` | `src/rot.c` | `rot_init` accepts exactly a matching key map; status/revoke act on the requested key; `rot_get_dsa_key` only returns a key the board reports OK, with its data and kind; no error codes as counts or ids | 3 keys | F-153 | 1 s / 1 s |
+| `rot-imx6ul` | i.MX6UL `rot_helpers.c`, `slc_helpers.c` | Revoked key reads as revoked; revoke burns only the key's bit; LOCKED exactly when HAB reports secure boot; lock fuse burnt only from an unlocked state | param1 < 4 | **F-150** | 1 s / 1 s |
+| `rot-imx8x` | i.MX8X `rot_helpers.c`, `slc_helpers.c` | REVOKED exactly when the key's SECO bit is set; LOCKED exactly when SECO reports OEM closed; fail closed when SECO can't be asked; forward only with the SRK fused | param1 < 4 | **F-152** | 1 s / 1 s |
+| `slc-imxrt` | i.MX RT `slc_helpers.c`, `rot_helpers.c` | LOCKED exactly when SEC_CONFIG is set; NOT_CONFIGURED means no SRK bits; no revocation support | none | F-151 | 1 s / 1 s |
 
 Checks turned off: `crc` has no unsigned overflow check (`while (size--)` wraps on purpose).
+
+Known failures are listed per proof in `expected_failures.txt`. A proof fails on any other
+failure, and also when a known one stops failing (then the list is updated and the proof becomes
+the fix's regression test).
 
 ## Trust boundary
 
@@ -57,9 +77,8 @@ What the proofs assume rather than prove. Each stub states its contract in its f
 From the approved plan (2026-11-02), ordered by attacker reachability:
 
 - **Phase 0 (done):** tooling, CI job, vacuity and mutation checks, `crc` and `wire`.
-- **Phase 1:** pre-auth parsers: `bpak` (header getters, part offset/size, signature copy),
-  `der_ecsig_to_rs`, `slc`/`rot` and the platform `rot_helpers.c`/`slc_helpers.c` (suspected:
-  i.MX6UL reads the revoke fuse from the wrong word), vendored `libc` and `uuid`.
+- **Phase 1:** done: `bpak`, `der`, `slc`/`rot` and the platform helpers (found F-148..F-153).
+  Left: every string and memory function in `src/lib/libc`, and `uuid`.
 - **Phase 2:** `bio` (32-bit `lba_t` arithmetic, `bio_erase` F-055), `gpt`, `image_helpers`
   (hashed range equals loaded range, F-065), `ab_state`, `ramlog`, `tzc380`.
 - **Phase 3:** `boot.c` with a ghost model of what was hashed and verified (F-070), and

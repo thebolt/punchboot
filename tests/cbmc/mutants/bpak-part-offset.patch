@@ -1,0 +1,16 @@
+# proof: bpak-part
+# The offset includes the part itself.
+--- a/src/lib/bpak.c
++++ b/src/lib/bpak.c
+@@ -266,10 +266,9 @@
+     bpak_foreach_part(h, p) {
+         if (!p->id)
+             break;
++        offset += bpak_part_size(p);
+         if (p->id == part->id)
+             break;
+-
+-        offset += bpak_part_size(p);
+     }
+ 
+     return offset;

@@ -107,9 +107,10 @@ for mutant in $MUTANTS; do
     mkdir -p "$scratch/build"
 
     for word in $WORDS; do
-        # Only a counterexample counts, not a build error or a timeout
-        run_proof "$scratch" "$scratch/build" "$proof" "$word" > /dev/null || true
-        if grep -q "VERIFICATION FAILED" "$scratch/build/$proof-$word.log" 2> /dev/null; then
+        # Only a new counterexample counts, not a build error, a timeout or a
+        # known failure (expected_failures.txt)
+        if ! run_proof "$scratch" "$scratch/build" "$proof" "$word" > /dev/null &&
+            grep -q "VERIFICATION FAILED" "$scratch/build/$proof-$word.log" 2> /dev/null; then
             echo "KILLED   $mutant ($proof, $word bit)"
         else
             echo "SURVIVED $mutant ($proof, $word bit): see the log below"

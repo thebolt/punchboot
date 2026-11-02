@@ -37,7 +37,10 @@ make -C tests/cbmc/proofs/wire WORD=32
 
 2. `harness.c` with a `void harness(void)` entry point and a header comment listing the
    target, the properties, the assumptions (bounds) and the stubs. Include `<common.h>`.
-   Inputs are uninitialized locals (CBMC treats them as any value). Constrain them with
+   Inputs are uninitialized locals (CBMC treats them as any value). Globals,
+   including static state in the code under proof, start as zero like in C, so
+   give them any value explicitly where the proof needs that. An uninitialized `bool` can hold
+   any byte in CBMC, so compare it as `!!b`. Constrain inputs with
    `__CPROVER_assume()`, state properties with `__CPROVER_assert()`, and add `PB_COVER()`
    goals for every path that must be reachable, so an over-constrained harness fails instead of
    passing vacuously.

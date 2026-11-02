@@ -1,0 +1,13 @@
+# proof: rot
+# rot_init does not compare the key ids.
+--- a/src/rot.c
++++ b/src/rot.c
+@@ -24,7 +24,7 @@
+         return -PB_ERR_PARAM;
+ 
+     for (int i = 0; i < keystore_pb.no_of_keys; i++) {
+-        if (keystore_pb.keys[i]->id != cfg_->key_map[i].id) {
++        if (0) {
+             return -PB_ERR_PARAM;
+         }
+     }

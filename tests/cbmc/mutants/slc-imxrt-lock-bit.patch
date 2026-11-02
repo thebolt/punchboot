@@ -1,0 +1,13 @@
+# proof: slc-imxrt
+# SEC_CONFIG read from bit 2.
+--- a/src/plat/imxrt/slc_helpers.c
++++ b/src/plat/imxrt/slc_helpers.c
+@@ -32,7 +32,7 @@
+         return rc;
+     }
+ 
+-    sec_boot_active = !!(tmp & 0x2);
++    sec_boot_active = !!(tmp & 0x4);
+ 
+     if (sec_boot_active) {
+         return SLC_CONFIGURATION_LOCKED;

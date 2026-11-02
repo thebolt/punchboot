@@ -1,0 +1,5 @@
+# imx6ul_read_key_status reads the revoke fuse from (REVOKE_BANK, REVOKE_BANK)
+# = bank 5 word 5, imx6ul_revoke_key writes bank 5 word 7. A revoked key reads
+# as valid, and a bit in word 5 makes a valid key read as revoked.
+a revoked key reads as revoked                    # F-150
+revoked only if the key's revoke bit is burnt     # F-150

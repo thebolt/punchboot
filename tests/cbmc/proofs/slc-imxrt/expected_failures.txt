@@ -1,0 +1,3 @@
+# imxrt_is_srk_fused() returns false when an SRK fuse read fails, so a device
+# with the SRK fused reads as NOT_CONFIGURED instead of returning the error.
+not configured means no SRK bits    # F-151

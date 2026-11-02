@@ -1,0 +1,13 @@
+# proof: bpak-signature
+# The output buffer size is not checked.
+--- a/src/lib/bpak.c
++++ b/src/lib/bpak.c
+@@ -335,8 +335,6 @@
+         return -BPAK_SIZE_ERROR;
+     if (header->signature_sz == 0)
+         return -BPAK_SIZE_ERROR;
+-    if (header->signature_sz > *size)
+-        return -BPAK_SIZE_ERROR;
+ 
+     (*size) = header->signature_sz;
+     memcpy(signature, header->signature, header->signature_sz);

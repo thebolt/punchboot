@@ -1,0 +1,13 @@
+# proof: bpak-header
+# Metadata may end 8 bytes past the array.
+--- a/src/lib/bpak.c
++++ b/src/lib/bpak.c
+@@ -248,7 +248,7 @@
+         if (!m->id)
+             break;
+ 
+-        if ((m->size + m->offset) > BPAK_METADATA_BYTES) {
++        if ((m->size + m->offset) > BPAK_METADATA_BYTES + 8) {
+             return -BPAK_SIZE_ERROR;
+         }
+     }

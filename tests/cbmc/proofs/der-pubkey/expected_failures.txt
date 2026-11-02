@@ -1,0 +1,9 @@
+# F-066: der_ec_public_key_data has no input length and trusts every length in
+# the data, so any read past the key buffer is possible. The input is the
+# compiled-in keystore. Fixing it needs a length parameter (internal API).
+pointer outside object bounds       # F-066
+memcmp: first buffer valid          # F-066 OID compared with a data length
+memcmp: second buffer valid         # F-066 data length longer than the OID
+unwinding assertion loop 0          # F-066 memcmp length comes from the data
+memcpy: source valid                # F-066 key length from the data
+arithmetic overflow on unsigned - in s -  # F-066 s -= 2 underflows
