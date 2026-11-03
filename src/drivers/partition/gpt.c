@@ -264,8 +264,9 @@ static int gpt_write_tbl(bio_dev_t dev)
 
     hdr->backup_lba = primary.hdr.current_lba;
     hdr->current_lba = last_lba;
-    hdr->entries_start_lba =
-        (last_lba - ((hdr->no_of_parts * sizeof(struct gpt_part_hdr)) / bio_block_size(dev)));
+    /* The whole 128 entry array is written, also with fewer entries in use
+     * (F-162). gpt_ptbl_init reads it from the same place. */
+    hdr->entries_start_lba = (last_lba - (sizeof(backup.part) / bio_block_size(dev)));
 
     hdr->hdr_crc = 0;
     hdr->part_array_crc =
