@@ -410,7 +410,17 @@ static int cmd_stream_read(void)
             stream_read->offset,
             stream_read->size);
 
-    if (!(bio_get_flags(block_dev) & BIO_FLAG_READABLE)) {
+    int flags = bio_get_flags(block_dev);
+
+    /* An error is not flags: block_dev is an error code after a failed
+     * stream initialize (F-074). The result is the one stream_check()
+     * gave for it. */
+    if (flags < 0) {
+        pb_wire_init_result(&result, -PB_RESULT_STREAM_NOT_INITIALIZED);
+        return -PB_ERR_PARAM;
+    }
+
+    if (!(flags & BIO_FLAG_READABLE)) {
         LOG_ERR("Partition may not be read");
         pb_wire_init_result(&result, -PB_RESULT_IO_ERROR);
         return -PB_ERR_IO;
@@ -456,7 +466,15 @@ static int cmd_stream_write(void)
             stream_write->offset,
             stream_write->size);
 
-    if (!(bio_get_flags(block_dev) & BIO_FLAG_WRITABLE)) {
+    int flags = bio_get_flags(block_dev);
+
+    /* An error is not flags (F-074) */
+    if (flags < 0) {
+        pb_wire_init_result(&result, -PB_RESULT_STREAM_NOT_INITIALIZED);
+        return -PB_ERR_PARAM;
+    }
+
+    if (!(flags & BIO_FLAG_WRITABLE)) {
         LOG_ERR("Partition may not be written");
         rc = -PB_ERR_IO;
         pb_wire_init_result(&result, error_to_wire(rc));
