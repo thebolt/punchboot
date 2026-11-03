@@ -210,7 +210,7 @@ gpt_add_part(int part_idx, unsigned int no_of_blocks, const uuid_t type_uuid, co
 static int gpt_write_tbl(bio_dev_t dev)
 {
     uint32_t crc_tmp = 0;
-    uint32_t err = 0;
+    int err = 0;
 
     /* Calculate CRC32 for header and part table */
     primary.hdr.hdr_crc = 0;
