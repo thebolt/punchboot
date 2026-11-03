@@ -240,17 +240,25 @@ static int fake_erase(bio_dev_t dev, lba_t first_lba, size_t count)
     return PB_OK;
 }
 
-/* Only the dispatch is tested. The range is not checked and the LBA is not
- * made absolute (F-055). */
+/* The driver gets the absolute LBA, and the range is checked (F-055) */
 static void test_erase_calls_the_driver(void **state)
 {
     struct fixture *f = *state;
+    lba_t first = (lba_t)bio_get_first_block(f->part);
+    lba_t blocks = (lba_t)bio_get_no_of_blocks(f->part);
 
     erase_calls = 0;
     assert_int_equal(bio_set_ios_erase(f->part, fake_erase), PB_OK);
     assert_int_equal(bio_erase(f->part, 3, 7), PB_OK);
     assert_int_equal(erase_calls, 1);
+    assert_int_equal(erase_lba, first + 3);
     assert_int_equal(erase_count, 7);
+
+    assert_int_equal(bio_erase(f->part, 0, blocks), PB_OK);
+    assert_int_equal(bio_erase(f->part, blocks, 1), -PB_ERR_PARAM);
+    assert_int_equal(bio_erase(f->part, 1, blocks), -PB_ERR_PARAM);
+    assert_int_equal(bio_erase(f->part, 0xffffffff, 2), -PB_ERR_PARAM);
+    assert_int_equal(erase_calls, 2);
 }
 
 static void test_set_private(void **state)

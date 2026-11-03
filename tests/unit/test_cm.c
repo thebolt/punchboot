@@ -1329,12 +1329,16 @@ static void test_part_erase(void **state)
 
     memcpy(req.uuid, UU_MISSING, 16);
     host_cmd(PB_CMD_PART_ERASE, &req, sizeof(req));
+    /* A partition that may not be written may not be erased (F-055) */
+    memcpy(req.uuid, UU_RO, 16);
+    host_cmd(PB_CMD_PART_ERASE, &req, sizeof(req));
     /* The ramdisk can't erase */
     memcpy(req.uuid, UU_RW, 16);
     host_cmd(PB_CMD_PART_ERASE, &req, sizeof(req));
     run();
 
     expect_result(-PB_RESULT_NOT_FOUND);
+    expect_result(-PB_RESULT_IO_ERROR);
     expect_result(-PB_RESULT_NOT_SUPPORTED);
     expect_end();
 }

@@ -638,6 +638,13 @@ static int cmd_part_erase(struct pb_command_erase_part *erase_cmd)
     if (dev < 0)
         return dev;
 
+    int flags = bio_get_flags(dev);
+
+    if (flags < 0 || !(flags & BIO_FLAG_WRITABLE)) {
+        LOG_ERR("Partition may not be erased");
+        return -PB_ERR_IO;
+    }
+
     return bio_erase(dev, erase_cmd->start_lba, erase_cmd->block_count);
 }
 

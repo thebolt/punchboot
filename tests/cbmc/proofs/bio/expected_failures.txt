@@ -8,6 +8,3 @@ bio_size                                                   # F-157
 bio_get_no_of_blocks                                       # F-157
 bio_get_first_block                                        # F-157
 bio_get_last_block                                         # F-157
-# bio_erase does not check the range and passes the LBA unchanged
-range starts in the device                                 # F-055
-range ends in the device                                   # F-055

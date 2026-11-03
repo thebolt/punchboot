@@ -154,10 +154,10 @@ int bio_write(bio_dev_t dev, lba_t lba, size_t length, const void *buf)
 
 int bio_erase(bio_dev_t dev, lba_t first_lba, size_t count)
 {
-    (void)first_lba;
-    (void)count;
-    /* No range check, like bio_erase (F-055) */
-    return pb_bio_valid(dev) ? pb_bio_rc() : -PB_ERR_PARAM;
+    int rc = pb_bio_range(dev, first_lba, count);
+    if (rc != PB_OK)
+        return rc;
+    return pb_bio_rc();
 }
 
 int bio_write_done(bio_dev_t dev)

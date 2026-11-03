@@ -238,7 +238,16 @@ int bio_erase(bio_dev_t dev, lba_t first_lba, size_t count)
     if (bio_pool[dev].erase == NULL)
         return -PB_ERR_NOT_SUPPORTED;
 
-    return bio_pool[dev].erase(dev, first_lba, count);
+    /* Like bio_read and bio_write: inside the device, and the driver gets
+     * the absolute LBA (F-055) */
+    uint64_t part_blocks = (uint64_t)bio_pool[dev].last_lba - bio_pool[dev].first_lba + 1;
+
+    if (first_lba >= part_blocks || count > part_blocks - first_lba) {
+        LOG_ERR("Range error, lba=%u, count=%zu", first_lba, count);
+        return -PB_ERR_PARAM;
+    }
+
+    return bio_pool[dev].erase(dev, bio_pool[dev].first_lba + first_lba, count);
 }
 
 int bio_get_hal_flags(bio_dev_t dev)
