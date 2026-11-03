@@ -832,7 +832,12 @@ static int pb_command_parse(void)
         goto err_out;
     }
 
-    if (pb_wire_requires_auth(&cmd) && (!authenticated) && (slc == PB_SLC_CONFIGURATION_LOCKED)) {
+    /* Only the unlocked life cycles are open (EOL by D-011): a locked device,
+     * and one whose SLC can't be read, need authentication (F-161, D-023) */
+    bool slc_open = (slc == PB_SLC_NOT_CONFIGURED || slc == PB_SLC_CONFIGURATION ||
+                     slc == PB_SLC_EOL);
+
+    if (pb_wire_requires_auth(&cmd) && (!authenticated) && !slc_open) {
         LOG_ERR("Not authenticated");
         pb_wire_init_result(&result, -PB_RESULT_NOT_AUTHENTICATED);
         goto err_out;

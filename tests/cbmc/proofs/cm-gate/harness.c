@@ -28,7 +28,7 @@ static int t_write(const void *buf, size_t length)
 {
     const struct pb_result *r = buf;
     __CPROVER_assert(length == sizeof(struct pb_result) && r->magic == PB_WIRE_MAGIC &&
-                         r->result_code == (uint8_t)-PB_RESULT_NOT_AUTHENTICATED,
+                         r->result_code == -PB_RESULT_NOT_AUTHENTICATED,
                      "only NOT_AUTHENTICATED is sent");
     return PB_OK;
 }

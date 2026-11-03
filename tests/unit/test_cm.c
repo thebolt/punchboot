@@ -1124,10 +1124,22 @@ static void test_slc_errors(void **state)
     expect_result(-PB_RESULT_IO_ERROR);
     assert_int_equal(sec.slc, SLC_CONFIGURATION);
 
+    /* An SLC that can't be read is treated as locked (F-161, D-023) */
     t.init_calls = 0;
+    t.out_len = t.out_pos = 0;
     sec.slc = -PB_ERR_IO;
     host_cmd(PB_CMD_SLC_READ, NULL, 0);
     run();
+    expect_result(-PB_RESULT_NOT_AUTHENTICATED);
+    expect_end();
+
+    t.init_calls = 0;
+    t.out_len = t.out_pos = 0;
+    host_auth_token();
+    host_cmd(PB_CMD_SLC_READ, NULL, 0);
+    run();
+    expect_result(PB_RESULT_OK); /* the authentication command */
+    expect_result(PB_RESULT_OK); /* the token */
     expect_result(-PB_RESULT_IO_ERROR);
     expect_end();
 }

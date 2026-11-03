@@ -210,3 +210,14 @@ Why: the unit and integration tests only check the inputs someone thought of. Mo
 security findings are bounds or wrap bugs in code that parses untrusted input, which is what
 bounded model checking finds. Note: D-022 and up may collide with other branches, renumber on
 merge.
+
+## D-023: Command mode authentication fails closed (2026-11-03)
+
+Commands that need authentication are open without it only when the security life cycle is a
+valid unlocked state: NOT_CONFIGURED, CONFIGURATION or EOL (D-011). A locked device, and a device
+whose life cycle can't be read (`slc_read_status()` returns an error) or reads as an unknown
+value, needs authentication.
+Why: the gate only closed for CONFIGURATION_LOCKED, so a HAB or SECO error (F-152) opened every
+command on a locked device (F-161, found by the CBMC `cm-gate` proof). A device whose SLC can't be
+read can still be used with the auth token or password. The wire protocol is unchanged (D-008).
+
