@@ -25,6 +25,24 @@ static uintptr_t jump_addr;
 static uintptr_t ramdisk_addr;
 static uintptr_t dtb_addr;
 
+/* A part's pb-load-addr: a u64 that fits a pointer (D-025) */
+static int load_addr(struct bpak_header *hdr, bpak_id_t id, uintptr_t *addr)
+{
+    struct bpak_meta_header *mh;
+    uint64_t value;
+
+    if (bpak_get_meta(hdr, BPAK_ID_PB_LOAD_ADDR, id, &mh) != BPAK_OK || mh->size < sizeof(value))
+        return -PB_ERR_BAD_META;
+
+    value = *bpak_get_meta_ptr(hdr, mh, uint64_t);
+
+    if (value > UINTPTR_MAX)
+        return -PB_ERR_BAD_META;
+
+    *addr = (uintptr_t)value;
+    return PB_OK;
+}
+
 int boot_driver_linux_init(const struct boot_driver_linux_config *cfg_in)
 {
     cfg = cfg_in;
@@ -48,16 +66,13 @@ int boot_driver_linux_prepare(struct bpak_header *hdr, uuid_t boot_part_uu)
     size_t dtb_length;
     size_t ramdisk_length;
     struct bpak_part_header *ph;
-    struct bpak_meta_header *mh;
 
-    rc = bpak_get_meta(hdr, BPAK_ID_PB_LOAD_ADDR, cfg->image_bpak_id, &mh);
+    rc = load_addr(hdr, cfg->image_bpak_id, &jump_addr);
 
-    if (rc != BPAK_OK) {
+    if (rc != PB_OK) {
         LOG_ERR("Could not read boot image meta data (%i)", rc);
-        return -PB_ERR_BAD_META;
+        return rc;
     }
-
-    jump_addr = (uintptr_t)*bpak_get_meta_ptr(hdr, mh, uint64_t);
 
     LOG_INFO("Boot entry: 0x%" PRIxPTR, jump_addr);
 
@@ -65,14 +80,12 @@ int boot_driver_linux_prepare(struct bpak_header *hdr, uuid_t boot_part_uu)
     uuid_unparse(device_uu, device_uu_str);
 
     if (cfg->ramdisk_bpak_id) {
-        rc = bpak_get_meta(hdr, BPAK_ID_PB_LOAD_ADDR, cfg->ramdisk_bpak_id, &mh);
+        rc = load_addr(hdr, cfg->ramdisk_bpak_id, &ramdisk_addr);
 
-        if (rc != BPAK_OK) {
+        if (rc != PB_OK) {
             LOG_ERR("Could not read ramdisk load addr (%i)", rc);
-            return -PB_ERR_BAD_META;
+            return rc;
         }
-
-        ramdisk_addr = (uintptr_t)*bpak_get_meta_ptr(hdr, mh, uint64_t);
         LOG_INFO("Ramdisk: %" PRIxPTR, ramdisk_addr);
     }
 
@@ -84,14 +97,12 @@ int boot_driver_linux_prepare(struct bpak_header *hdr, uuid_t boot_part_uu)
             return -PB_ERR_BAD_META;
         }
 
-        rc = bpak_get_meta(hdr, BPAK_ID_PB_LOAD_ADDR, cfg->dtb_bpak_id, &mh);
+        rc = load_addr(hdr, cfg->dtb_bpak_id, &dtb_addr);
 
-        if (rc != BPAK_OK) {
+        if (rc != PB_OK) {
             LOG_ERR("Could not read dtb load addr meta");
-            return -PB_ERR_BAD_META;
+            return rc;
         }
-
-        dtb_addr = (uintptr_t)*bpak_get_meta_ptr(hdr, mh, uint64_t);
         dtb_length = bpak_part_size(ph);
         LOG_INFO("DTB: %" PRIxPTR, dtb_addr);
 

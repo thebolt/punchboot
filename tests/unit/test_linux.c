@@ -271,6 +271,27 @@ static void test_kernel_needs_load_addr(void **state)
     assert_int_equal(boot_driver_linux_prepare(hdr, boot_part_uu), -PB_ERR_BAD_META);
 }
 
+/* A load address entry shorter than a u64 was read past its end (D-025) */
+static void test_load_addr_is_u64(void **state)
+{
+    static const bpak_id_t ids[] = { ID_KERNEL, ID_RAMDISK, ID_DTB };
+    struct bpak_meta_header *meta;
+    (void)state;
+
+    assert_int_equal(boot_driver_linux_init(&cfg_dtb), PB_OK);
+
+    for (size_t i = 0; i < sizeof(ids) / sizeof(ids[0]); i++) {
+        make_dtb("chosen");
+        assert_int_equal(bpak_get_meta(hdr, BPAK_ID_PB_LOAD_ADDR, ids[i], &meta), BPAK_OK);
+        meta->size = 4;
+        assert_int_equal(boot_driver_linux_prepare(hdr, boot_part_uu), -PB_ERR_BAD_META);
+        meta->size = 8;
+    }
+
+    make_dtb("chosen");
+    assert_int_equal(boot_driver_linux_prepare(hdr, boot_part_uu), PB_OK);
+}
+
 static void test_dtb_is_patched(void **state)
 {
     int len;
@@ -404,9 +425,13 @@ static void test_dtb_out_of_space(void **state)
 int main(void)
 {
     const struct CMUnitTest tests[] = {
-        LINUX_TEST(test_init_requires_image_id), LINUX_TEST(test_kernel_only),
-        LINUX_TEST(test_kernel_needs_load_addr), LINUX_TEST(test_dtb_is_patched),
-        LINUX_TEST(test_dtb_without_options),    LINUX_TEST(test_dtb_errors),
+        LINUX_TEST(test_init_requires_image_id),
+        LINUX_TEST(test_kernel_only),
+        LINUX_TEST(test_kernel_needs_load_addr),
+        LINUX_TEST(test_load_addr_is_u64),
+        LINUX_TEST(test_dtb_is_patched),
+        LINUX_TEST(test_dtb_without_options),
+        LINUX_TEST(test_dtb_errors),
         LINUX_TEST(test_dtb_out_of_space),
     };
 
