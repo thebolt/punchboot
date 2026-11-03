@@ -69,7 +69,7 @@ static size_t tables_length;
 
 static inline uint32_t efi_crc32(const void *buf, uint32_t sz)
 {
-    return (crc32(~0L, buf, sz) ^ ~0UL);
+    return crc32(UINT32_MAX, buf, sz) ^ UINT32_MAX;
 }
 
 /* Low entropy source for setting up UUID's */

@@ -1,3 +1,0 @@
-# efi_crc32: crc32(~0L, ...) ^ ~0UL, the conversions to uint32_t are intended
-type conversion in (uint32_t)~0l
-64: type conversion in (uint32_t)((unsigned long int)return_value_crc32
