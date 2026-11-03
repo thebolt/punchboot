@@ -1,0 +1,2 @@
+# bpak_valid_header: size + pad_bytes wraps u64 (the check result is right)
+arithmetic overflow on unsigned + in p->size +    # F-149

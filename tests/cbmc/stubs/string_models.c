@@ -6,7 +6,9 @@
  * SPDX-License-Identifier: BSD-3-Clause
  *
  * CBMC models of the libc string functions, linked into every proof except
- * the libc proofs (which verify the real src/lib/libc implementations).
+ * the libc proofs (which verify the real src/lib/libc implementations):
+ * memcpy, memmove and memset in one step each, memcmp, strlen and strncpy as
+ * plain loops.
  *
  * They assert the C standard preconditions (the buffers are valid for n bytes,
  * memcpy does not overlap) and then have the standard effect, using CBMC's
@@ -36,6 +38,14 @@ void *memcpy(void *dst, const void *src, size_t n)
     __CPROVER_assert(__CPROVER_r_ok(src, n), "memcpy: source valid for n bytes");
     __CPROVER_assert(!pb_cbmc_overlap(dst, src, n), "memcpy: no overlap");
 
+#ifdef PB_CBMC_MEMCPY_CHECK_ONLY
+    /* Copies of more than PB_CBMC_MEMCPY_CHECK_ONLY bytes only have their
+     * preconditions checked. For the gpt proof, where those are copies
+     * between entry arrays that both hold any value, so the destination
+     * already covers whatever the copy would put there. */
+    if (n > PB_CBMC_MEMCPY_CHECK_ONLY)
+        return dst;
+#endif
     if (n > 0) {
         char tmp[n];
         __CPROVER_array_replace(tmp, (const char *)src);
@@ -84,4 +94,28 @@ int memcmp(const void *a, const void *b, size_t n)
             return (int)pa[i] - (int)pb[i];
     }
     return 0;
+}
+
+size_t strlen(const char *s)
+{
+    size_t n = 0;
+
+    /* Each read is checked by the pointer checks; a string that is not
+     * terminated inside its object fails them */
+    while (s[n] != '\0')
+        n++;
+    return n;
+}
+
+char *strncpy(char *dst, const char *src, size_t n)
+{
+    size_t i;
+
+    /* C11 7.24.2.4: copy up to n characters, stop at the null character,
+     * pad the rest of dst[0, n) with null characters */
+    for (i = 0; i < n && src[i] != '\0'; i++)
+        dst[i] = src[i];
+    for (; i < n; i++)
+        dst[i] = '\0';
+    return dst;
 }

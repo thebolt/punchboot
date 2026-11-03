@@ -17,6 +17,7 @@
 /* The proof is only meaningful if the word size is the one we asked for */
 _Static_assert(sizeof(void *) * 8 == PB_CBMC_WORD, "pointer width");
 _Static_assert(sizeof(size_t) * 8 == PB_CBMC_WORD, "size_t width");
+_Static_assert((char)-1 > 0, "char is unsigned, like on ARM");
 
 /* Reachability goals for the vacuity check (make cover). A cover goal that is
  * UNSATISFIED means the assumptions or stubs cut the path away, so the proof

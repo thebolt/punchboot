@@ -1,0 +1,13 @@
+# proof: uuid-parse
+# Any character is accepted between the groups.
+--- a/src/lib/uuid/parse.c
++++ b/src/lib/uuid/parse.c
+@@ -51,7 +51,7 @@
+ 	for (i=0, cp = in; i <= 36; i++,cp++) {
+ 		if ((i == 8) || (i == 13) || (i == 18) ||
+ 		    (i == 23)) {
+-			if (*cp == '-')
++			if (1)
+ 				continue;
+ 			else
+ 				return -1;

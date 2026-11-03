@@ -1,0 +1,3 @@
+# memchr compares *s == c without converting c to unsigned char (C11 7.24.5.1),
+# so a c outside 0..255 never matches. All callers (libfdt) pass ASCII.
+first byte equal to (unsigned char)c    # F-154

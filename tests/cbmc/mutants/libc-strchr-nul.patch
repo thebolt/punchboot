@@ -1,0 +1,13 @@
+# proof: libc-strchr
+# strchr does not find the terminating NUL.
+--- a/src/lib/libc/strchr.c
++++ b/src/lib/libc/strchr.c
+@@ -43,7 +43,7 @@
+ 
+     c = ch;
+     for (;; ++p) {
+-        if (*p == c)
++        if (*p == c && c != 0)
+             return ((char *)p);
+         if (*p == '\0')
+             return (NULL);

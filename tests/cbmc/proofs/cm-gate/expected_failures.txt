@@ -1,0 +1,3 @@
+# The gate only closes for slc == CONFIGURATION_LOCKED: with a failed SLC read
+# (slc < 0) every command runs unauthenticated
+undefined function should be unreachable    # F-161

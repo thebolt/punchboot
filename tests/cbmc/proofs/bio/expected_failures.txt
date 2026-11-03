@@ -1,0 +1,13 @@
+# The int getters truncate LBAs above INT_MAX, and last - first + 1 wraps
+# for a device of 2^32 blocks (bio_size, bio_get_no_of_blocks).
+type conversion in (signed int)bio_pool                    # F-157
+32: in (bio_pool[dev].last_lba - bio_pool[dev].first_lba) + (unsigned int)1      # F-157
+64: in (bio_pool[(signed long int)dev].last_lba - bio_pool[(signed long int)dev].first_lba) + (unsigned int)1   # F-157
+type conversion in (signed int)((bio_pool                  # F-157
+bio_size                                                   # F-157
+bio_get_no_of_blocks                                       # F-157
+bio_get_first_block                                        # F-157
+bio_get_last_block                                         # F-157
+# bio_erase does not check the range and passes the LBA unchanged
+range starts in the device                                 # F-055
+range ends in the device                                   # F-055

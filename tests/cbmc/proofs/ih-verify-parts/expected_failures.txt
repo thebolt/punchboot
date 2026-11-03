@@ -1,0 +1,16 @@
+# The pb-load-addr metadata is read as a u64 without a size check (and, after
+# an empty slot, outside the metadata, F-148), truncated to uintptr_t on 32
+# bit, and CHECK_OVERLAP's load_addr + size wraps: a part can load over the
+# firmware. Signed images only.
+dereference failure: pointer outside object bounds in *((uint64_t *)&hdr->metadata   # F-065
+32: type conversion in (uintptr_t)*((uint64_t *)&hdr->metadata                       # F-065
+arithmetic overflow on unsigned + in load_addr + bytes_to_read                       # F-065
+32: the load address fits                                                            # F-065
+no part loads over the firmware                                                      # F-065
+memcpy: source valid for n bytes                                                     # F-065 (the harness reads the same u64)
+pointer outside object bounds in R_OK(src, n)                                        # F-065
+# Part sizes (bpak, signed header only)
+arithmetic overflow on unsigned + in p->size +                                       # F-149
+arithmetic overflow on unsigned + in part->size +                                    # F-149
+32: type conversion in (size_t)part->transport_size                                  # F-149
+32: type conversion in (size_t)(part->size +                                         # F-149

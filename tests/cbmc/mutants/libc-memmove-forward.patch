@@ -1,0 +1,13 @@
+# proof: libc-memmove
+# Overlapping moves always copy forwards.
+--- a/src/lib/libc/memmove.c
++++ b/src/lib/libc/memmove.c
+@@ -19,7 +19,7 @@
+      * that issue is probably moot as such usage is probably undefined
+      * behaviour and a bug anyway.
+      */
+-    if ((size_t)dst - (size_t)src >= len) {
++    if (1) {
+         /* destination not in source data, so can safely use memcpy */
+         return memcpy(dst, src, len);
+     } else {

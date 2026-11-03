@@ -1,0 +1,10 @@
+# header_ptr is only set by the IN_MEM (and CUSTOM) sources: after an IN_MEM
+# boot_load, a BIO or CB boot verifies the static header but prepare,
+# late_boot and jump get the old in-memory header.
+prepare gets the header verified in this boot    # F-070
+late_boot gets the header verified in this boot  # F-070
+jump only to a verified image                    # F-070
+# The header LBA (blocks - 8) wraps for a partition of fewer than 8 blocks;
+# bio_read then rejects it, so it is only an error path.
+return_value_bio_get_no_of_blocks - sizeof(struct bpak_header)                # F-159
+64: type conversion in (lba_t)((unsigned long int)return_value_bio_get_no_of_blocks  # F-159

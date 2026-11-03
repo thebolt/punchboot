@@ -1,0 +1,11 @@
+# The backup table goes to last_lba - (no_of_parts * 128) / block_size but is
+# always written whole (33 blocks): with fewer than 128 entries it runs past
+# the end of the disk (bio_write rejects it, so recovery fails).
+write inside the disk                                      # F-162
+# err is a uint32_t holding the int error codes (implementation-defined
+# conversions both ways)
+type conversion in (uint32_t)return_value_bio_write        # F-162
+type conversion in (signed int)err                         # F-162
+# efi_crc32: crc32(~0L, ...) ^ ~0UL, the conversions to uint32_t are intended
+type conversion in (uint32_t)~0l
+64: type conversion in (uint32_t)((unsigned long int)return_value_crc32

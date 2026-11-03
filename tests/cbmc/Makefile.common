@@ -16,10 +16,18 @@
 #   SOURCES    Firmware sources under proof (harness.c is added automatically)
 #   UNWIND     Global --unwind bound (plus --unwinding-assertions)
 #   EXTRA_INC  Extra include flags
+#   PRE_INC    Include flags searched first, e.g. for a config.h wrapper that
+#              overrides a Kconfig value (#include_next <config.h>, then #undef)
 #   EXTRA_DEFS Extra defines
 #   CBMC_EXTRA Extra flags for cbmc (e.g. --unwindset, --object-bits)
 #   CHECK_FLAGS_OFF Default checks to turn off, e.g. --unsigned-overflow-check
 #              for code that wraps on purpose. Say why in the proof Makefile.
+#   ABSTRACT   Functions whose body is replaced by one that returns any value
+#              (goto-instrument), for code too big to inline that has its own
+#              proof. Say which proof in the proof Makefile, and why the
+#              abstraction is enough.
+#   UNDEFINED  goto-instrument body option for every function without a body,
+#              e.g. assert-false: calling any of them fails the proof
 #   MODELS     Models linked into the proof (default: stubs/string_models.c, log.c).
 #              The libc proofs set it empty to verify src/lib/libc itself.
 #
@@ -35,6 +43,7 @@ WORD      ?= 32
 BUILD     ?= $(ROOT)/build-cbmc
 CBMC      ?= cbmc
 GOTO_CC   ?= goto-cc
+GOTO_INSTRUMENT ?= goto-instrument
 TIMEOUT   ?= 600
 
 ifeq ($(WORD),32)
@@ -47,10 +56,14 @@ endif
 
 MODELS    ?= $(ROOT)/tests/cbmc/stubs/string_models.c $(ROOT)/tests/cbmc/stubs/log.c
 
+# Shared harness headers and stubs: a change rebuilds every proof
+HDRS      := $(wildcard $(ROOT)/tests/cbmc/*.h $(ROOT)/tests/cbmc/stubs/*.c)
+
 OUT       := $(BUILD)/$(PROOF)-$(WORD)
 CONFIG_H  := $(BUILD)/config.h
 
 INC := -nostdinc \
+       $(PRE_INC) \
        -I $(ROOT)/tests/cbmc \
        -I $(ROOT)/include/libc \
        -I $(ROOT)/include/libc/$(LIBC_ARCH) \
@@ -59,7 +72,8 @@ INC := -nostdinc \
        -I $(BUILD) \
        $(EXTRA_INC)
 
-DEFS := -DPB_CBMC=1 -DPB_CBMC_WORD=$(WORD) -DLOGLEVEL=0 $(EXTRA_DEFS)
+# ARM has an unsigned char (aarch32 and aarch64); goto-cc follows the x86 host
+DEFS := -funsigned-char -DPB_CBMC=1 -DPB_CBMC_WORD=$(WORD) -DLOGLEVEL=0 $(EXTRA_DEFS)
 
 DEFAULT_CHECKS := --bounds-check \
                   --pointer-check \
@@ -73,8 +87,11 @@ DEFAULT_CHECKS := --bounds-check \
 
 CHECK_FLAGS := $(filter-out $(CHECK_FLAGS_OFF),$(DEFAULT_CHECKS))
 
+# By default CBMC turns a self loop (while (1) {}) into assume(false), which
+# silently drops every path that hangs. Keep it a loop, so the unwinding
+# assertion reports the hang.
 CBMC_FLAGS = --function harness $(CHECK_FLAGS) --unwind $(UNWIND) \
-             --unwinding-assertions $(CBMC_EXTRA)
+             --unwinding-assertions --no-self-loops-to-assumptions $(CBMC_EXTRA)
 
 .PHONY: all check cover clean
 
@@ -85,13 +102,31 @@ $(CONFIG_H):
 	cd $(ROOT) && KCONFIG_CONFIG=configs/host_defconfig python3 scripts/genconfig.py \
 	    --header-path $(CONFIG_H) --config-out $(BUILD)/.config src/Kconfig
 
-$(OUT).gb: harness.c $(SOURCES) $(MODELS) $(CONFIG_H)
-	mkdir -p $(BUILD)
-	$(GOTO_CC) -m$(WORD) -std=gnu99 $(INC) $(DEFS) harness.c $(SOURCES) $(MODELS) -o $@
+# The harness itself must compile without warnings: an implicit declaration
+# makes CBMC assume an int return, which silently truncates results.
+# Replace the bodies of $(ABSTRACT) in $(1) by ones that return any value,
+# and give the functions without a body the $(UNDEFINED) body
+define abstract
+	$(if $(UNDEFINED),$(GOTO_INSTRUMENT) --generate-function-body '^(?!__CPROVER_).*' \
+	    --generate-function-body-options $(UNDEFINED) $(1) $(1).tmp && mv $(1).tmp $(1))
+	$(if $(ABSTRACT),$(GOTO_INSTRUMENT) $(foreach f,$(ABSTRACT),--remove-function-body $(f)) \
+	    $(1) $(1).tmp && $(GOTO_INSTRUMENT) \
+	    --generate-function-body '$(subst $(space),|,$(strip $(ABSTRACT)))' \
+	    --generate-function-body-options nondet-return $(1).tmp $(1) && rm $(1).tmp)
+endef
 
-$(OUT).cover.gb: harness.c $(SOURCES) $(MODELS) $(CONFIG_H)
+space := $(subst ,, )
+
+$(OUT).gb: harness.c $(SOURCES) $(MODELS) $(HDRS) $(CONFIG_H)
+	mkdir -p $(BUILD)
+	$(GOTO_CC) -m$(WORD) -std=gnu99 $(INC) $(DEFS) -Werror -c harness.c -o $(OUT).harness.o
+	$(GOTO_CC) -m$(WORD) -std=gnu99 $(INC) $(DEFS) harness.c $(SOURCES) $(MODELS) -o $@
+	$(call abstract,$@)
+
+$(OUT).cover.gb: harness.c $(SOURCES) $(MODELS) $(HDRS) $(CONFIG_H)
 	mkdir -p $(BUILD)
 	$(GOTO_CC) -m$(WORD) -std=gnu99 $(INC) $(DEFS) -DPB_CBMC_COVER=1 harness.c $(SOURCES) $(MODELS) -o $@
+	$(call abstract,$@)
 
 # Property checks. Fails if a property fails that is not listed in
 # expected_failures.txt (known bugs, with their finding id), if a listed one no
@@ -110,4 +145,4 @@ cover: $(OUT).cover.gb
 	    { grep "coverage.*FAILED" $(OUT).cover.log; echo "unreachable cover goals"; exit 1; }
 
 clean:
-	rm -f $(OUT).gb $(OUT).cover.gb $(OUT).log $(OUT).cover.log
+	rm -f $(OUT).gb $(OUT).harness.o $(OUT).cover.gb $(OUT).log $(OUT).cover.log

@@ -1,0 +1,15 @@
+# The pb-load-addr metadata is read as a u64 without checking its size, and
+# truncated to uintptr_t on 32 bit; load_addr + offset can wrap.
+dereference failure: pointer outside object bounds in *((uint64_t *)&hdr->metadata   # F-065
+32: type conversion in (uintptr_t)*((uint64_t *)&hdr->metadata                       # F-065
+arithmetic overflow on unsigned + in load_addr + offset                              # F-065
+# Part sizes and offsets (bpak, signed header only)
+arithmetic overflow on unsigned + in p->size +                                       # F-149
+arithmetic overflow on unsigned + in part->size +                                    # F-149
+32: type conversion in (size_t)part->transport_size                                  # F-149
+32: type conversion in (size_t)(part->size +                                         # F-149
+64: type conversion in (off_t)                                                       # F-149
+64: in (unsigned long int)return_value_bpak_part_offset                              # F-149
+64: in offset + (unsigned long int)return_value_bpak_part_offset                     # F-149
+64: in (offset + (unsigned long int)return_value_bpak_part_offset) - sizeof          # F-149
+64: in (int64_t)((offset + (unsigned long int)return_value_bpak_part_offset)         # F-149

@@ -1,0 +1,12 @@
+# proof: libc-memset
+# memset writes one byte too many.
+--- a/src/lib/libc/memset.c
++++ b/src/lib/libc/memset.c
+@@ -11,6 +11,7 @@
+ {
+     char *ptr = dst;
+ 
++    count++;
+     while (count--)
+         *ptr++ = val;
+ 

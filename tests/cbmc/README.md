@@ -51,5 +51,14 @@ make -C tests/cbmc/proofs/wire WORD=32
 
 4. Run both word sizes and add the proof to the status table in `doc/dev/verification.md`.
 
+CBMC (6.6) limitations worth knowing:
+
+- It does not promote variadic arguments narrower than `int` (`uint8_t`, `uint16_t`), so
+  `va_arg(ap, unsigned int)` on them reads past the argument. See `uuid-roundtrip` for the
+  workaround.
+- It gives an initialized flexible array member no storage, and cannot do address arithmetic on
+  one declared differently in two files. See `rot` for the workaround.
+- An uninitialized `bool` can hold any byte; compare it as `!!b`.
+
 Stubs and models shared between proofs go in `stubs/`. A stub returns any value its real function
 can return, including errors, and documents its contract.

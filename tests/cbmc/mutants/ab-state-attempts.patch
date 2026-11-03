@@ -1,0 +1,14 @@
+# proof: ab-state
+# An unverified A boots without an attempt left.
+--- a/src/boot/ab_state.c
++++ b/src/boot/ab_state.c
+@@ -169,8 +169,7 @@
+         "A/B boot load state %u %u %u", boot_state.enable, boot_state.verified, boot_state.error);
+ 
+     if (boot_state.enable & PB_STATE_A_ENABLED) {
+-        if (!(boot_state.verified & PB_STATE_A_VERIFIED) &&
+-            boot_state.remaining_boot_attempts > 0) {
++        if (!(boot_state.verified & PB_STATE_A_VERIFIED)) {
+             boot_state.remaining_boot_attempts--;
+             commit = true; /* Update state data */
+             boot_part_uu = cfg->sys_a_uu;

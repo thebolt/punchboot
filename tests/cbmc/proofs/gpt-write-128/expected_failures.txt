@@ -1,0 +1,7 @@
+# err is a uint32_t holding the int error codes (implementation-defined
+# conversions both ways)
+type conversion in (uint32_t)return_value_bio_write        # F-162
+type conversion in (signed int)err                         # F-162
+# efi_crc32: crc32(~0L, ...) ^ ~0UL, the conversions to uint32_t are intended
+type conversion in (uint32_t)~0l
+64: type conversion in (uint32_t)((unsigned long int)return_value_crc32

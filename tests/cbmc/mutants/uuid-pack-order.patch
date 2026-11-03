@@ -1,0 +1,16 @@
+# proof: uuid-pack
+# time_mid packed little endian.
+--- a/src/lib/uuid/pack.c
++++ b/src/lib/uuid/pack.c
+@@ -50,9 +50,9 @@
+ 	out[0] = (unsigned char) tmp;
+ 
+ 	tmp = uu->time_mid;
++	out[4] = (unsigned char) tmp;
++	tmp >>= 8;
+ 	out[5] = (unsigned char) tmp;
+-	tmp >>= 8;
+-	out[4] = (unsigned char) tmp;
+ 
+ 	tmp = uu->time_hi_and_version;
+ 	out[7] = (unsigned char) tmp;

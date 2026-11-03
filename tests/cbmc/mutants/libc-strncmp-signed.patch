@@ -1,0 +1,13 @@
+# proof: libc-strncmp
+# strncmp compares as signed char.
+--- a/src/lib/libc/strcmp.c
++++ b/src/lib/libc/strcmp.c
+@@ -56,7 +56,7 @@
+         return (0);
+     do {
+         if (*s1 != *s2++)
+-            return (*(const unsigned char *)s1 - *(const unsigned char *)(s2 - 1));
++            return (*(const signed char *)s1 - *(const signed char *)(s2 - 1));
+         if (*s1++ == '\0')
+             break;
+     } while (--n != 0);
