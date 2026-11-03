@@ -430,6 +430,14 @@ int gpt_ptbl_init(bio_dev_t dev, const struct gpt_table_list *default_tables, si
         }
 
         name[36] = 0;
+
+        /* The entry comes from the disk: it must lie inside the disk, and
+         * fit the 32-bit LBAs of bio (F-158) */
+        if (p->first_lba > p->last_lba || p->last_lba > (uint64_t)bio_get_last_block(dev)) {
+            LOG_ERR("Partition '%s' is outside the disk, skipped", name);
+            continue;
+        }
+
         bio_dev_t new_dev =
             bio_allocate_parent(dev, p->first_lba, p->last_lba, bio_block_size(dev), uu, name);
         if (new_dev < 0) {

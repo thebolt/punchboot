@@ -1,9 +1,4 @@
-# The on-disk 64-bit first_lba/last_lba are truncated to the 32-bit lba_t of
-# bio_allocate_parent.
-type conversion in (lba_t)p->first_lba     # F-158
-type conversion in (lba_t)p->last_lba      # F-158
-# Entries are not checked against the disk or each other.
-a partition lies inside the disk           # F-006
+# Entries are not checked against each other (the range is, F-158).
 partitions do not overlap                  # F-006
 # efi_crc32: crc32(~0L, ...) ^ ~0UL, the conversions to uint32_t are intended
 type conversion in (uint32_t)~0l
