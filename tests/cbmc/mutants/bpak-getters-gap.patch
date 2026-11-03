@@ -1,0 +1,14 @@
+# proof: bpak-getters
+# bpak_get_part looks past the first empty slot (F-148).
+--- a/src/lib/bpak.c
++++ b/src/lib/bpak.c
+@@ -116,9 +116,6 @@
+ int bpak_get_part(struct bpak_header *hdr, bpak_id_t id, struct bpak_part_header **part)
+ {
+     bpak_foreach_part(hdr, p) {
+-        if (!p->id)
+-            break;
+-
+         if (p->id == id) {
+             (*part) = p;
+             return BPAK_OK;

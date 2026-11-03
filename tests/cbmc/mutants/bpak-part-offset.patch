@@ -2,15 +2,16 @@
 # The offset includes the part itself.
 --- a/src/lib/bpak.c
 +++ b/src/lib/bpak.c
-@@ -266,10 +266,9 @@
+@@ -293,11 +293,9 @@
      bpak_foreach_part(h, p) {
          if (!p->id)
              break;
-+        offset += bpak_part_size(p);
++        offset += bpak_part_size64(p);
          if (p->id == part->id)
              break;
 -
--        offset += bpak_part_size(p);
+-        /* bpak_part_size truncates to a 32 bit size_t on 32 bit */
+-        offset += bpak_part_size64(p);
      }
  
      return offset;

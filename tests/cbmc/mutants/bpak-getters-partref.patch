@@ -2,9 +2,9 @@
 # bpak_get_meta ignores the part reference.
 --- a/src/lib/bpak.c
 +++ b/src/lib/bpak.c
-@@ -21,7 +21,7 @@
- {
-     bpak_foreach_meta(hdr, m) {
+@@ -26,7 +26,7 @@
+             break;
+ 
          if (m->id == id) {
 -            if (match_partref) {
 +            if (0) {

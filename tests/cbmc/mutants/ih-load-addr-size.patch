@@ -1,0 +1,14 @@
+# proof: ih-verify-parts-read
+# The load address is read as a u64 from a shorter entry (F-065).
+--- a/src/boot/image_helpers.c
++++ b/src/boot/image_helpers.c
+@@ -41,8 +41,7 @@
+     uint64_t addr;
+     uint64_t size = (p->flags & BPAK_FLAG_TRANSPORT) ? p->transport_size : p->size + p->pad_bytes;
+ 
+-    if (bpak_get_meta(hdr, BPAK_ID_PB_LOAD_ADDR, p->id, &mh) != BPAK_OK ||
+-        mh->size < sizeof(addr)) {
++    if (bpak_get_meta(hdr, BPAK_ID_PB_LOAD_ADDR, p->id, &mh) != BPAK_OK) {
+         LOG_ERR("Could not read pb-entry for part %x", p->id);
+         return -PB_ERR_BAD_META;
+     }

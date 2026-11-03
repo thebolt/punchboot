@@ -1,0 +1,13 @@
+# proof: ih-verify-parts
+# A part may wrap past the top of the address space (F-065).
+--- a/src/boot/image_helpers.c
++++ b/src/boot/image_helpers.c
+@@ -49,7 +49,7 @@
+ 
+     addr = *bpak_get_meta_ptr(hdr, mh, uint64_t);
+ 
+-    if (addr > UINTPTR_MAX || size > UINTPTR_MAX - addr) {
++    if (addr > UINTPTR_MAX) {
+         LOG_ERR("Part %x does not fit at its load address", p->id);
+         return -PB_ERR_MEM;
+     }

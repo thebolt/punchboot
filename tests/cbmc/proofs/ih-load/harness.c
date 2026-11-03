@@ -104,8 +104,17 @@ void harness(void)
     __CPROVER_assume(hdr.parts[2].id == 0);
     size_t chunk;
     __CPROVER_assume(chunk > 0 && chunk <= SIZE_MAX / 4);
-    for (unsigned int i = 0; i < 2; i++)
-        __CPROVER_assume((uint64_t)bpak_part_size(&hdr.parts[i]) <= 3 * (uint64_t)chunk);
+    /* The real part sizes, without bpak_part_size's wrap and truncation:
+     * the header is only checked inside boot_image_load_and_hash */
+    for (unsigned int i = 0; i < 2; i++) {
+        struct bpak_part_header *p = &hdr.parts[i];
+        if (p->flags & BPAK_FLAG_TRANSPORT) {
+            __CPROVER_assume(p->transport_size <= 3 * (uint64_t)chunk);
+        } else {
+            __CPROVER_assume(p->size <= 3 * (uint64_t)chunk &&
+                             p->pad_bytes <= 3 * (uint64_t)chunk - p->size);
+        }
+    }
     uint8_t digest[64];
 
     int rc = boot_image_load_and_hash(&hdr, chunk, read_f, NULL, digest, sizeof(digest));

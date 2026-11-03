@@ -1,0 +1,13 @@
+# proof: bpak-header
+# bpak_valid_header accepts size + pad that wraps (F-149).
+--- a/src/lib/bpak.c
++++ b/src/lib/bpak.c
+@@ -257,8 +257,6 @@
+         if (!p->id)
+             break;
+ 
+-        if (p->size > UINT64_MAX - p->pad_bytes)
+-            return -BPAK_SIZE_ERROR;
+ 
+         if (((p->size + p->pad_bytes) % BPAK_PART_ALIGN) != 0)
+             return -BPAK_BAD_ALIGNMENT;

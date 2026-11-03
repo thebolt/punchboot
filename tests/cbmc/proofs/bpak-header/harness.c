@@ -63,5 +63,7 @@ void harness(void)
     __CPROVER_assert(
         (hdr.parts[k].size % BPAK_PART_ALIGN + hdr.parts[k].pad_bytes) % BPAK_PART_ALIGN == 0,
         "OK implies part alignment");
+    __CPROVER_assert(hdr.parts[k].size <= UINT64_MAX - hdr.parts[k].pad_bytes,
+                     "OK implies size + pad does not wrap");
     PB_COVER(used_meta > 0 && used_parts > 0);
 }

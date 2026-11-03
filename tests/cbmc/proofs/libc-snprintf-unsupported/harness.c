@@ -10,7 +10,7 @@
  *
  * Property: snprintf returns for every format specifier, supported or not
  * ("%c", "%X", "%zu", "%2u" here; "%X" is the uuid upper case format).
- * Known failures: F-089 (it spins forever instead).
+ * (F-089 regression: it spun forever on them.)
  * Assumptions: n <= 8.
  * Stubs: none (the firmware libc itself).
  */
