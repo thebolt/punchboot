@@ -278,6 +278,12 @@ static int cmd_bpak_read(void)
         return dev;
     }
 
+    /* The header is at the end: a smaller partition has none (F-159) */
+    if ((size_t)bio_get_no_of_blocks(dev) < sizeof(struct bpak_header) / bio_block_size(dev)) {
+        pb_wire_init_result(&result, -PB_RESULT_NOT_FOUND);
+        return -PB_ERR_NOT_FOUND;
+    }
+
     lba_t header_lba =
         bio_get_no_of_blocks(dev) - (sizeof(struct bpak_header) / bio_block_size(dev));
 
