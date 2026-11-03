@@ -22,6 +22,12 @@
 #include <pb/rot.h>
 #include <pb/slc.h>
 
+/* The ATF headers define these like pb/utils_def.h does */
+#undef U
+#undef UL
+#undef ULL
+#undef L
+#undef LL
 #include "atf_interface.h"
 
 #define BPAK_ID_OPTEE_ARCH 0x99e5e80a /* bpak_id("optee-arch"), holds 64 or 32 */
