@@ -249,6 +249,13 @@ static int cmd_board(void)
     rc = cfg->command(
         board_cmd->command, bfr, board_cmd->request_size, bfr_response, &response_size);
 
+    /* The board must not report more than the buffer it got (F-165) */
+    if (response_size > CM_BUF_SIZE) {
+        LOG_ERR("Bad board command response size: %zu", response_size);
+        response_size = 0;
+        rc = -PB_ERR_PARAM;
+    }
+
     board_result.size = response_size;
     pb_wire_init_result2(&result, error_to_wire(rc), &board_result, sizeof(board_result));
 
@@ -997,6 +1004,13 @@ static int pb_command_parse(void)
 
         size_t response_size = CM_BUF_SIZE;
         rc = cfg->status(bfr_response, &response_size);
+
+        /* The board must not report more than the buffer it got (F-165) */
+        if (response_size > CM_BUF_SIZE) {
+            LOG_ERR("Bad board status size: %zu", response_size);
+            response_size = 0;
+            rc = -PB_ERR_PARAM;
+        }
 
         status_result.size = response_size;
         pb_wire_init_result2(&result, error_to_wire(rc), &status_result, sizeof(status_result));
