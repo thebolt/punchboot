@@ -267,6 +267,31 @@ static void test_valid_header_rejects(void **state)
     assert_int_equal(bpak_valid_header(hdr), BPAK_OK);
 }
 
+static void test_get_stops_at_empty_slot(void **state)
+{
+    struct bpak_header *hdr = *state;
+    struct bpak_meta_header *meta = NULL;
+    struct bpak_part_header *part = NULL;
+
+    add_meta(hdr, ID_META_A, 0, 8, 0);
+    assert_int_equal(bpak_add_part(hdr, ID_KERNEL, &part), BPAK_OK);
+
+    /* bpak_valid_header doesn't check entries after an empty slot, so the
+     * getters must not return them (F-148) */
+    hdr->meta[2].id = ID_META_C;
+    hdr->meta[2].offset = BPAK_METADATA_BYTES;
+    hdr->meta[2].size = 8;
+    hdr->parts[2].id = ID_DTB;
+    hdr->parts[2].size = 1;
+    assert_int_equal(bpak_valid_header(hdr), BPAK_OK);
+
+    assert_int_equal(bpak_get_meta(hdr, ID_META_C, 0, &meta), -BPAK_NOT_FOUND);
+    assert_int_equal(bpak_get_meta_anyref(hdr, ID_META_C, &meta), -BPAK_NOT_FOUND);
+    assert_int_equal(bpak_get_part(hdr, ID_DTB, &part), -BPAK_NOT_FOUND);
+    assert_int_equal(bpak_get_meta(hdr, ID_META_A, 0, &meta), BPAK_OK);
+    assert_int_equal(bpak_get_part(hdr, ID_KERNEL, &part), BPAK_OK);
+}
+
 static void test_copyz_signature(void **state)
 {
     struct bpak_header *hdr = *state;
@@ -352,6 +377,7 @@ int main(void)
         BPAK_TEST(test_transport_part_size),
         BPAK_TEST(test_add_transport_meta),
         BPAK_TEST(test_valid_header_rejects),
+        BPAK_TEST(test_get_stops_at_empty_slot),
         BPAK_TEST(test_copyz_signature),
         BPAK_TEST(test_key_ids),
         BPAK_TEST(test_strings),

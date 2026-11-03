@@ -20,6 +20,11 @@ static int bpak_get_meta_int(struct bpak_header *hdr,
                              struct bpak_meta_header **meta)
 {
     bpak_foreach_meta(hdr, m) {
+        /* bpak_valid_header only checks the entries before the first empty
+         * slot */
+        if (!m->id)
+            break;
+
         if (m->id == id) {
             if (match_partref) {
                 if (m->part_id_ref != part_id_ref)
@@ -111,6 +116,9 @@ void bpak_del_meta(struct bpak_header *hdr, struct bpak_meta_header *meta)
 int bpak_get_part(struct bpak_header *hdr, bpak_id_t id, struct bpak_part_header **part)
 {
     bpak_foreach_part(hdr, p) {
+        if (!p->id)
+            break;
+
         if (p->id == id) {
             (*part) = p;
             return BPAK_OK;

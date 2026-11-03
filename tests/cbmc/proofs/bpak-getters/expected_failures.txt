@@ -1,6 +1,0 @@
-# bpak_valid_header stops at the first empty slot, the getters don't: an entry
-# after a gap is returned unchecked.
-meta data inside the metadata array          # F-148
-anyref meta data inside the metadata array   # F-148
-part is aligned                              # F-148
-arithmetic overflow on unsigned + in p->size + # F-149

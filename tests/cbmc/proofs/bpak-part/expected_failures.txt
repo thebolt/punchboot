@@ -1,9 +1,0 @@
-arithmetic overflow on unsigned + in part->size +            # F-149 size + pad wraps u64
-part size is not truncated                                   # F-149
-32: type conversion in (size_t)part->transport_size          # F-149 truncated to 32 bits
-32: type conversion in (size_t)(part->size +                 # F-149 truncated to 32 bits
-32: transport size is not truncated                          # F-149
-64: arithmetic overflow on signed to unsigned type conversion in (unsigned long int)offset  # F-149
-64: arithmetic overflow on unsigned + in (unsigned long int)offset +                        # F-149
-64: arithmetic overflow on unsigned to signed type conversion in (off_t)                    # F-149
-64: offset after the header                                  # F-149 off_t overflow
