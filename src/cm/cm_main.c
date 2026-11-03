@@ -533,6 +533,15 @@ static int cmd_part_verify(void)
     if (verify_cmd->bpak) {
         LOG_DBG("Bpak header");
 
+        /* The size includes the header, and the header is at the end of
+         * the partition (F-164, F-159) */
+        if (bytes_to_verify < sizeof(struct bpak_header) ||
+            (size_t)bio_get_no_of_blocks(block_dev) <
+                sizeof(struct bpak_header) / bio_block_size(block_dev)) {
+            pb_wire_init_result(&result, -PB_RESULT_INVALID_ARGUMENT);
+            return -PB_ERR_PARAM;
+        }
+
         lba_t header_lba = bio_get_no_of_blocks(block_dev) -
                            (sizeof(struct bpak_header) / bio_block_size(block_dev));
 
