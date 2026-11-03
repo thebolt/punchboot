@@ -740,7 +740,16 @@ static int cmd_slc_read(void)
     if (rc < 0)
         return rc;
 
-    for (size_t i = 0; i < rot_no_of_keys(); i++) {
+    /* The wire response has room for ARRAY_SIZE(key_status.active) keys
+     * (F-166) */
+    size_t no_of_keys = rot_no_of_keys();
+
+    if (no_of_keys > ARRAY_SIZE(key_status.active)) {
+        LOG_ERR("Only %zu of %zu keys reported", ARRAY_SIZE(key_status.active), no_of_keys);
+        no_of_keys = ARRAY_SIZE(key_status.active);
+    }
+
+    for (size_t i = 0; i < no_of_keys; i++) {
         int key_rc = rot_read_key_status_by_idx(i);
         key_id_t key_id = rot_key_idx_to_id(i);
 
