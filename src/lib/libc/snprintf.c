@@ -139,7 +139,7 @@ snprintf_loop:
                     }
                     chars_printed++;
 
-                    unum = (unsigned int)-num;
+                    unum = 0U - (unsigned int)num;
                 } else {
                     unum = (unsigned int)num;
                 }

@@ -1,2 +1,0 @@
-# %d negates a negative int in int: -INT_MIN overflows (undefined behaviour)
-arithmetic overflow on signed unary minus in -num    # F-160
