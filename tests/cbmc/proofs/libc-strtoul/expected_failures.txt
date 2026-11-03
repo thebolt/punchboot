@@ -1,3 +1,0 @@
-# "0x" not followed by a hex digit: C11 makes "0" the subject sequence
-# (value 0, endptr at the x); strtoul returns 0 but sets endptr to nptr.
-endptr as in C11 7.22.1.4    # F-156

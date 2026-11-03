@@ -67,7 +67,8 @@ unsigned long strtoul(const char *nptr, char **endptr, int base)
         c = *s++;
     } else if (c == '+')
         c = *s++;
-    if ((base == 0 || base == 16) && c == '0' && (*s == 'x' || *s == 'X')) {
+    if ((base == 0 || base == 16) && c == '0' && (*s == 'x' || *s == 'X') &&
+        isxdigit((unsigned char)s[1])) {
         c = s[1];
         s += 2;
         base = 16;
