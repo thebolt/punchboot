@@ -93,7 +93,7 @@ static void test_rot_not_initialized(void **state)
     assert_int_equal(rot_read_key_status(KEY_P256), -PB_ERR_NOT_SUPPORTED);
     assert_int_equal(rot_no_of_keys(), 0);
     assert_int_equal(rot_read_key_status_by_idx(0), -PB_ERR_NOT_SUPPORTED);
-    assert_int_equal((int)rot_key_idx_to_id(0), -PB_ERR_NOT_SUPPORTED);
+    assert_int_equal(rot_key_idx_to_id(0), 0);
     assert_int_equal(rot_revoke_key(KEY_P256), -PB_ERR_NOT_SUPPORTED);
     assert_int_equal(rot_get_dsa_key(KEY_P256, &kind, &der, &der_length), -PB_ERR_NOT_SUPPORTED);
 }
@@ -138,7 +138,7 @@ static void test_rot_key_status(void **state)
     assert_int_equal(rot_read_key_status_by_idx(2), PB_OK);
     assert_int_equal(rot_read_key_status_by_idx(3), -PB_ERR_PARAM);
     assert_int_equal(rot_key_idx_to_id(2), KEY_P521);
-    assert_int_equal((int)rot_key_idx_to_id(3), -PB_ERR_PARAM);
+    assert_int_equal(rot_key_idx_to_id(3), 0);
 }
 
 static void test_rot_get_dsa_key(void **state)

@@ -1,3 +1,0 @@
-# rot_key_idx_to_id returns error codes as key ids. All callers only call it
-# for an index below rot_no_of_keys().
-type conversion in (key_id_t)-           # F-153

@@ -67,10 +67,11 @@ int rot_read_key_status_by_idx(unsigned int index)
 
 key_id_t rot_key_idx_to_id(unsigned int index)
 {
+    /* 0 is no key: an error code would look like a key id (F-153) */
     if (!cfg)
-        return -PB_ERR_NOT_SUPPORTED;
+        return 0;
     if (!(index < cfg->key_map_length))
-        return -PB_ERR_PARAM;
+        return 0;
 
     return cfg->key_map[index].id;
 }
