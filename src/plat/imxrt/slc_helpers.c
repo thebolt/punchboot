@@ -3,7 +3,8 @@
 #include <pb/slc.h>
 #include <plat/imxrt/imxrt.h>
 
-static bool imxrt_is_srk_fused(void)
+/* 1 if any SRK fuse word is set, 0 if none, or a read error (F-151) */
+static int imxrt_is_srk_fused(void)
 {
     int rc;
     uint32_t fuse_val;
@@ -12,13 +13,13 @@ static bool imxrt_is_srk_fused(void)
         rc = imx_ocotp_read(3, n, &fuse_val);
 
         if (rc != PB_OK)
-            return false;
+            return rc;
 
         if (fuse_val != 0)
-            return true;
+            return 1;
     }
 
-    return false;
+    return 0;
 }
 
 slc_t imxrt_slc_read_status(void)
@@ -43,7 +44,11 @@ slc_t imxrt_slc_read_status(void)
      * report 'SLC_CONFIGURATION'. This is not perfect but will probably
      * cover most cases.
      */
-    if (imxrt_is_srk_fused())
+    rc = imxrt_is_srk_fused();
+
+    if (rc < 0)
+        return rc;
+    else if (rc)
         return SLC_CONFIGURATION;
     else
         return SLC_NOT_CONFIGURED;
