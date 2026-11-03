@@ -1,0 +1,13 @@
+# proof: ramlog
+# putc writes one byte after the head.
+--- a/src/ramlog.c
++++ b/src/ramlog.c
+@@ -57,7 +57,7 @@
+ 
+     /* The data before the head, so that a reader never sees a head that
+      * counts a character which isn't in RAM yet */
+-    p = &ramlog.data[ramlog.hdr.head % RAMLOG_SIZE];
++    p = &ramlog.data[(ramlog.hdr.head + 1) % RAMLOG_SIZE];
+     *p = c;
+     ramlog_sync(p, 1);
+     ramlog.hdr.head++;

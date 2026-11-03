@@ -1,0 +1,14 @@
+# proof: cm-gate
+# Only CONFIGURATION_LOCKED closes the gate (F-161).
+--- a/src/cm/cm_main.c
++++ b/src/cm/cm_main.c
+@@ -834,8 +834,7 @@
+ 
+     /* Only the unlocked life cycles are open (EOL by D-011): a locked device,
+      * and one whose SLC can't be read, need authentication (F-161, D-023) */
+-    bool slc_open = (slc == PB_SLC_NOT_CONFIGURED || slc == PB_SLC_CONFIGURATION ||
+-                     slc == PB_SLC_EOL);
++    bool slc_open = (slc != PB_SLC_CONFIGURATION_LOCKED);
+ 
+     if (pb_wire_requires_auth(&cmd) && (!authenticated) && !slc_open) {
+         LOG_ERR("Not authenticated");

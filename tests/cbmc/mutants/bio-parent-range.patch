@@ -1,0 +1,14 @@
+# proof: bio-child
+# A partition may reach outside its parent (F-163).
+--- a/src/bio.c
++++ b/src/bio.c
+@@ -85,8 +85,7 @@
+ 
+     /* A partition lies inside its parent; both are in the LBAs of the HAL
+      * the partition inherits (F-163) */
+-    if (first_lba < bio_pool[parent].first_lba || last_lba > bio_pool[parent].last_lba)
+-        return -PB_ERR_PARAM;
++
+ 
+     new = bio_allocate(first_lba, last_lba, block_size, uu, description);
+ 

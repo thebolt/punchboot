@@ -1,0 +1,13 @@
+# proof: ih-auth
+# OK without dsa_verify setting verified.
+--- a/src/boot/image_helpers.c
++++ b/src/boot/image_helpers.c
+@@ -119,7 +119,7 @@
+                     digest_length,
+                     &verified);
+ 
+-    if (rc == 0 && verified) {
++    if (rc == 0) {
+         LOG_INFO("Authentication successful");
+     } else {
+         LOG_ERR("Authentication failed");

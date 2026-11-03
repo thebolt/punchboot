@@ -1,0 +1,13 @@
+# proof: tzc380
+# Region 0 (the background region) can be programmed.
+--- a/src/drivers/tzc/tzc380.c
++++ b/src/drivers/tzc/tzc380.c
+@@ -53,7 +53,7 @@
+     if (base == 0)
+         return -PB_ERR_STATE;
+ 
+-    if (region == 0 || region >= no_of_regions)
++    if (region >= no_of_regions)
+         return -PB_ERR_PARAM;
+ 
+     if ((sp & ~TZC380_SP_ALL) != 0)

@@ -1,0 +1,13 @@
+# proof: gpt
+# On-disk entries are not checked against the disk (F-158).
+--- a/src/drivers/partition/gpt.c
++++ b/src/drivers/partition/gpt.c
+@@ -433,7 +433,7 @@
+ 
+         /* The entry comes from the disk: it must lie inside the disk, and
+          * fit the 32-bit LBAs of bio (F-158) */
+-        if (p->first_lba > p->last_lba || p->last_lba > (uint64_t)bio_get_last_block(dev)) {
++        if (0) {
+             LOG_ERR("Partition '%s' is outside the disk, skipped", name);
+             continue;
+         }

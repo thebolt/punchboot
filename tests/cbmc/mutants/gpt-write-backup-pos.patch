@@ -1,0 +1,14 @@
+# proof: gpt-write
+# The backup entries go where no_of_parts entries fit (F-162).
+--- a/src/drivers/partition/gpt.c
++++ b/src/drivers/partition/gpt.c
+@@ -266,7 +266,8 @@
+     hdr->current_lba = last_lba;
+     /* The whole 128 entry array is written, also with fewer entries in use
+      * (F-162). gpt_ptbl_init reads it from the same place. */
+-    hdr->entries_start_lba = (last_lba - (sizeof(backup.part) / bio_block_size(dev)));
++    hdr->entries_start_lba =
++        (last_lba - ((hdr->no_of_parts * sizeof(struct gpt_part_hdr)) / bio_block_size(dev)));
+ 
+     hdr->hdr_crc = 0;
+     hdr->part_array_crc =

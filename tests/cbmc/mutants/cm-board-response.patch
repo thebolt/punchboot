@@ -1,0 +1,13 @@
+# proof: cm-board
+# A board response larger than the buffer is sent (F-165).
+--- a/src/cm/cm_main.c
++++ b/src/cm/cm_main.c
+@@ -250,7 +250,7 @@
+         board_cmd->command, bfr, board_cmd->request_size, bfr_response, &response_size);
+ 
+     /* The board must not report more than the buffer it got (F-165) */
+-    if (response_size > CM_BUF_SIZE) {
++    if (0) {
+         LOG_ERR("Bad board command response size: %zu", response_size);
+         response_size = 0;
+         rc = -PB_ERR_PARAM;

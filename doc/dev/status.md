@@ -1,6 +1,6 @@
 # Status
 
-_Last updated: 2026-11-02_
+_Last updated: 2026-11-03_
 
 ## Current focus
 
@@ -51,9 +51,14 @@ the host half of 4 are done (`compatibility.md`, Guards).
   (D-020, temporary). Bugs found on the way: F-143, F-144, F-147 (open). Left: de-duplication
   F-145 (porting API part on hold), ATF F-146, boards F-033/F-051.
 
-**CBMC (branch `cbmc`, D-022):** Phase 0 is done: `tests/cbmc`, `scripts/pbdev cbmc`, the CI job
-(not blocking), vacuity and mutation checks, and the `crc` and `wire` proofs at 32 and 64 bit.
-Next is Phase 1 (bpak, der, slc/rot + platform helpers, libc, uuid). Plan in `verification.md`.
+**CBMC (branch `cbmc`, D-022):** about 60 proofs in `tests/cbmc` at 32 and 64 bit (`verification.md`):
+the pre-auth parsers (bpak, der, gpt, signature), the root of trust and SLC, every libc string
+function against C11, bio, ab_state, ramlog, tzc380, image verification, the boot flow, the
+command mode gate and handlers, crypto dispatch. They found F-148..F-163; fixed F-001, F-070,
+F-089, F-150 (i.MX6UL revoke fuse), F-151, F-152, F-154..F-156, F-158..F-163 (F-161: the auth gate
+failed open on an SLC read error, D-023), each a `bugfix:` commit with its proof as the test.
+Open from them: F-055/F-075 (erase), F-065/F-148/F-149 (signed images, need a D-008 decision),
+F-157, F-006 overlap, F-066. Host unit tests pass; integration tests not run outside the container.
 
 **Hard rule (D-008):** never break wire or bpak compatibility. See `compatibility.md`.
 

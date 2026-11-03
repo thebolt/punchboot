@@ -64,7 +64,8 @@ if [ "$MODE" = proofs ]; then
     if [ $# -gt 0 ]; then
         PROOFS="$*"
     else
-        PROOFS="$(cd tests/cbmc/proofs && ls -d -- */ | tr -d / | tr "\n" " ")"
+        # A directory without a Makefile is a shared harness, not a proof
+        PROOFS="$(cd tests/cbmc/proofs && ls -- */Makefile | sed 's|/Makefile$||' | tr "\n" " ")"
     fi
 
     # Generate config.h once, before the proofs run in parallel

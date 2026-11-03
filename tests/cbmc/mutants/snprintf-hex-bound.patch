@@ -1,0 +1,13 @@
+# proof: libc-snprintf-x
+# %x ignores the buffer size again (F-089).
+--- a/src/lib/libc/snprintf.c
++++ b/src/lib/libc/snprintf.c
+@@ -161,7 +161,7 @@
+                 break;
+             case 'x':
+                 unum = va_arg(args, unsigned int);
+-                unsigned_num_print(&s, n, unum, &chars_printed, 16, padc, padn);
++                unsigned_num_print(&s, (size_t)-1, unum, &chars_printed, 16, padc, padn);
+                 break;
+             case '0':
+                 padc = '0';

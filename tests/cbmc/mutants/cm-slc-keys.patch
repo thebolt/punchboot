@@ -1,0 +1,13 @@
+# proof: cm-slc-read
+# All keys of the board are written to the 16 key slots (F-166).
+--- a/src/cm/cm_main.c
++++ b/src/cm/cm_main.c
+@@ -744,7 +744,7 @@
+      * (F-166) */
+     size_t no_of_keys = rot_no_of_keys();
+ 
+-    if (no_of_keys > ARRAY_SIZE(key_status.active)) {
++    if (0) {
+         LOG_ERR("Only %zu of %zu keys reported", ARRAY_SIZE(key_status.active), no_of_keys);
+         no_of_keys = ARRAY_SIZE(key_status.active);
+     }
