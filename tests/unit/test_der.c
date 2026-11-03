@@ -278,14 +278,15 @@ static const uint8_t secp521r1[] = { 0x2b, 0x81, 0x04, 0x00, 0x23 };
 static void check_ec_key(const uint8_t *oid, size_t oid_len, size_t point_len, dsa_t expected)
 {
     uint8_t key[256];
+    size_t key_length;
     uint8_t out[160];
     uint8_t expected_point[160];
     dsa_t kind = 0;
 
-    make_ec_key(key, oid, oid_len, point_len);
+    key_length = make_ec_key(key, oid, oid_len, point_len);
     memset(expected_point, 0xa5, point_len);
 
-    assert_int_equal(der_ec_public_key_data(key, out, sizeof(out), &kind), PB_OK);
+    assert_int_equal(der_ec_public_key_data(key, key_length, out, sizeof(out), &kind), PB_OK);
     assert_int_equal(kind, expected);
     assert_memory_equal(out, expected_point, point_len);
 }
@@ -302,36 +303,42 @@ static void test_ec_public_key_data(void **state)
 static void test_ec_public_key_output_too_small(void **state)
 {
     uint8_t key[256];
+    size_t key_length;
     uint8_t out[63];
     dsa_t kind;
     (void)state;
 
-    make_ec_key(key, secp256r1, sizeof(secp256r1), 64);
-    assert_int_equal(der_ec_public_key_data(key, out, sizeof(out), &kind), -PB_ERR_BUF_TOO_SMALL);
+    key_length = make_ec_key(key, secp256r1, sizeof(secp256r1), 64);
+    assert_int_equal(der_ec_public_key_data(key, key_length, out, sizeof(out), &kind),
+                     -PB_ERR_BUF_TOO_SMALL);
 }
 
 static void test_ec_public_key_unknown_curve(void **state)
 {
     static const uint8_t unknown[] = { 0x2b, 0x81, 0x04, 0x00, 0x99 };
     uint8_t key[256];
+    size_t key_length;
     uint8_t out[160];
     dsa_t kind;
     (void)state;
 
-    make_ec_key(key, unknown, sizeof(unknown), 64);
-    assert_int_equal(der_ec_public_key_data(key, out, sizeof(out), &kind), -PB_ERR_NOT_IMPLEMENTED);
+    key_length = make_ec_key(key, unknown, sizeof(unknown), 64);
+    assert_int_equal(der_ec_public_key_data(key, key_length, out, sizeof(out), &kind),
+                     -PB_ERR_NOT_IMPLEMENTED);
 }
 
 static void test_ec_public_key_not_ec(void **state)
 {
     uint8_t key[256];
+    size_t key_length;
     uint8_t out[160];
     dsa_t kind;
     (void)state;
 
-    make_ec_key(key, secp256r1, sizeof(secp256r1), 64);
+    key_length = make_ec_key(key, secp256r1, sizeof(secp256r1), 64);
     key[8] = 0x00; /* Last byte of the id-ecPublicKey OID */
-    assert_int_equal(der_ec_public_key_data(key, out, sizeof(out), &kind), -PB_ERR_ASN1);
+    assert_int_equal(der_ec_public_key_data(key, key_length, out, sizeof(out), &kind),
+                     -PB_ERR_ASN1);
 }
 
 static void test_ec_public_key_bad_encoding(void **state)
@@ -350,15 +357,34 @@ static void test_ec_public_key_bad_encoding(void **state)
     };
 
     uint8_t key[256];
+    size_t key_length;
     uint8_t out[160];
     dsa_t kind;
     (void)state;
 
     for (size_t i = 0; i < ARRAY_SIZE(cases); i++) {
-        make_ec_key(key, secp256r1, sizeof(secp256r1), 64);
+        key_length = make_ec_key(key, secp256r1, sizeof(secp256r1), 64);
         key[cases[i].offset] = cases[i].value;
-        assert_int_equal(der_ec_public_key_data(key, out, sizeof(out), &kind), cases[i].rc);
+        assert_int_equal(der_ec_public_key_data(key, key_length, out, sizeof(out), &kind),
+                         cases[i].rc);
     }
+}
+
+static void test_ec_public_key_truncated(void **state)
+{
+    uint8_t key[256];
+    uint8_t out[160];
+    size_t key_length;
+    dsa_t kind;
+    (void)state;
+
+    key_length = make_ec_key(key, secp256r1, sizeof(secp256r1), 64);
+
+    /* Every length in the key points past a shorter buffer (F-066) */
+    for (size_t n = 0; n < key_length; n++)
+        assert_int_not_equal(der_ec_public_key_data(key, n, out, sizeof(out), &kind), PB_OK);
+
+    assert_int_equal(der_ec_public_key_data(key, key_length, out, sizeof(out), &kind), PB_OK);
 }
 
 int main(void)
@@ -376,6 +402,7 @@ int main(void)
         cmocka_unit_test(test_ec_public_key_unknown_curve),
         cmocka_unit_test(test_ec_public_key_not_ec),
         cmocka_unit_test(test_ec_public_key_bad_encoding),
+        cmocka_unit_test(test_ec_public_key_truncated),
     };
 
     return cmocka_run_group_tests(tests, NULL, NULL);

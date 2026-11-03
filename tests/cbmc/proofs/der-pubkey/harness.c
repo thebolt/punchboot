@@ -8,10 +8,11 @@
  * Proof: der_ec_public_key_data (src/lib/der_helpers.c)
  *
  * Parses a public key from the keystore that is compiled into the firmware
- * (imx_caam.c), so the input is trusted. It has no input length parameter.
+ * (imx_caam.c), so the input is trusted.
  * Properties: no undefined behaviour and no access outside the key or the
- * output buffer, for any key bytes in a buffer of up to MAX_KEY bytes.
- * Known failures: F-066 (the parser trusts the lengths in the data).
+ * output buffer, for any key bytes in a buffer of up to MAX_KEY bytes
+ * (F-066 regression: every length in the key is checked against
+ * key_length).
  * Assumptions: key buffer <= MAX_KEY bytes (a P-521 SubjectPublicKeyInfo is
  * 158 bytes).
  * Stubs: string models.
@@ -35,7 +36,7 @@ void harness(void)
     uint8_t *key = pb_cbmc_alloc(key_length);
     uint8_t *out = pb_cbmc_alloc(out_length);
 
-    int rc = der_ec_public_key_data(key, out, out_length, &kind);
+    int rc = der_ec_public_key_data(key, key_length, out, out_length, &kind);
 
     PB_COVER(rc == PB_OK);
     PB_COVER(rc != PB_OK);

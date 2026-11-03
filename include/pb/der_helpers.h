@@ -28,6 +28,7 @@ int der_ecsig_to_rs(const uint8_t *sig, size_t sig_length, uint8_t *r, uint8_t *
  * Extract public key data from a DER encoded key
  *
  * @param[in] pub_key_der DER bytes
+ * @param[in] pub_key_der_length Length of pub_key_der
  * @param[out] output Raw key output
  * @param[in] output_length Length of output buffer
  * @param[out] key_kind Decoded key type
@@ -38,6 +39,7 @@ int der_ecsig_to_rs(const uint8_t *sig, size_t sig_length, uint8_t *r, uint8_t *
  *        -PB_ERR_NOT_SUPPORTED, on un-supported key types
  */
 int der_ec_public_key_data(const uint8_t *pub_key_der,
+                           size_t pub_key_der_length,
                            uint8_t *output,
                            size_t output_length,
                            dsa_t *key_kind);

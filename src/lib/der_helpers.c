@@ -132,7 +132,41 @@ int der_ecsig_to_rs(const uint8_t *sig, size_t sig_length, uint8_t *r, uint8_t *
     return der_integer_to_fixed(&p, end, s, length);
 }
 
+/* Reads the tag and length of a DER element at *p. The tag must be 'tag'
+ * (else 'tag_rc'), and the content must fit before end. */
+static int der_element(const uint8_t **p, const uint8_t *end, uint8_t tag, int tag_rc, size_t *len)
+{
+    int rc;
+
+    if (*p >= end)
+        return -PB_ERR_ASN1;
+
+    if (*(*p)++ != tag)
+        return tag_rc;
+
+    rc = asn1_length_fits(*p, end);
+
+    if (rc != PB_OK)
+        return rc;
+
+    rc = asn1_size(p, len);
+
+    if (rc != PB_OK)
+        return rc;
+
+    if (*len > (size_t)(end - *p))
+        return -PB_ERR_ASN1;
+
+    return PB_OK;
+}
+
+static bool oid_is(const uint8_t *p, size_t len, const uint8_t *oid, size_t oid_len)
+{
+    return len == oid_len && memcmp(p, oid, oid_len) == 0;
+}
+
 int der_ec_public_key_data(const uint8_t *pub_key_der,
+                           size_t pub_key_der_length,
                            uint8_t *output,
                            size_t output_length,
                            dsa_t *key_kind)
@@ -140,70 +174,64 @@ int der_ec_public_key_data(const uint8_t *pub_key_der,
     size_t s;
     int rc;
     const uint8_t *p = pub_key_der;
+    const uint8_t *end = pub_key_der + pub_key_der_length;
 
-    if (*p++ != 0x30)
-        return -PB_ERR_ASN1;
-
-    rc = asn1_size(&p, &s);
-
-    if (rc != 0)
-        return rc;
-
-    if (*p++ != 0x30)
-        return -PB_ERR_ASN1;
-
-    rc = asn1_size(&p, &s);
+    /* Every length is checked against the key's length (F-066) */
+    rc = der_element(&p, end, 0x30, -PB_ERR_ASN1, &s);
 
     if (rc != 0)
         return rc;
 
-    if (*p++ != 0x06)
-        return -1;
+    end = p + s;
 
-    rc = asn1_size(&p, &s);
+    rc = der_element(&p, end, 0x30, -PB_ERR_ASN1, &s);
 
     if (rc != 0)
         return rc;
 
-    if (memcmp(p, ec_identifier, s) == 0) {
-        p += s;
+    const uint8_t *algorithm_end = p + s;
 
-        if (*p++ != 0x06)
-            return -1;
+    rc = der_element(&p, algorithm_end, 0x06, -PB_ERR, &s);
 
-        rc = asn1_size(&p, &s);
+    if (rc != 0)
+        return rc;
 
-        if (rc != 0)
-            return rc;
-
-        if (memcmp(p, secp256r1_oid, s) == 0)
-            *key_kind = DSA_EC_SECP256r1;
-        else if (memcmp(p, secp384r1_oid, s) == 0)
-            *key_kind = DSA_EC_SECP384r1;
-        else if (memcmp(p, secp521r1_oid, s) == 0)
-            *key_kind = DSA_EC_SECP521r1;
-        else
-            return -PB_ERR_NOT_IMPLEMENTED;
-
-        p += s;
-
-        if (*p++ != 0x03)
-            return -1;
-
-        rc = asn1_size(&p, &s);
-
-        if (rc != 0)
-            return rc;
-
-        p += 2; /* Skip unused bits and compression point */
-        s -= 2;
-
-        if (s > output_length)
-            return -PB_ERR_BUF_TOO_SMALL;
-        memcpy(output, p, s);
-    } else {
+    if (!oid_is(p, s, (const uint8_t *)ec_identifier, sizeof(ec_identifier) - 1))
         return -PB_ERR_ASN1;
-    }
 
+    p += s;
+
+    rc = der_element(&p, algorithm_end, 0x06, -PB_ERR, &s);
+
+    if (rc != 0)
+        return rc;
+
+    if (oid_is(p, s, secp256r1_oid, sizeof(secp256r1_oid) - 1))
+        *key_kind = DSA_EC_SECP256r1;
+    else if (oid_is(p, s, secp384r1_oid, sizeof(secp384r1_oid) - 1))
+        *key_kind = DSA_EC_SECP384r1;
+    else if (oid_is(p, s, secp521r1_oid, sizeof(secp521r1_oid) - 1))
+        *key_kind = DSA_EC_SECP521r1;
+    else
+        return -PB_ERR_NOT_IMPLEMENTED;
+
+    p = algorithm_end;
+
+    rc = der_element(&p, end, 0x03, -PB_ERR, &s);
+
+    if (rc != 0)
+        return rc;
+
+    /* Unused bits and the point compression byte */
+    if (s < 2)
+        return -PB_ERR_ASN1;
+
+    p += 2;
+    s -= 2;
+
+    if (s > output_length)
+        return -PB_ERR_BUF_TOO_SMALL;
+
+    memcpy(output, p, s);
     return PB_OK;
 }
