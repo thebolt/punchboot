@@ -1,4 +1,0 @@
-# unsigned_num_print writes the hex digits and the padding without checking
-# the buffer size n, so a small buffer overflows and is not terminated.
-pointer outside object bounds    # F-089
-NUL terminated in the buffer     # F-089

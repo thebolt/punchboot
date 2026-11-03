@@ -1,3 +1,0 @@
-# Unsupported format specifiers spin forever in while (1) {} instead of
-# failing (the uuid upper case format "%X" is one of them).
-unwinding assertion loop    # F-089
