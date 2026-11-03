@@ -1,3 +1,0 @@
-# pb_wire_init_result stores the (negative) result code in the int8_t wire
-# field through uint8_t on purpose (the wire format)
-type conversion in (int8_t)(uint8_t)result_code

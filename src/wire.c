@@ -64,7 +64,7 @@ int pb_wire_init_result(struct pb_result *result, enum pb_results result_code)
 {
     memset(result, 0, sizeof(*result));
     result->magic = PB_WIRE_MAGIC;
-    result->result_code = (uint8_t)result_code;
+    result->result_code = (int8_t)result_code;
 
     return PB_RESULT_OK;
 }
