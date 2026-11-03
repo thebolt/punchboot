@@ -174,7 +174,8 @@ static void test_allocate_pool_full(void **state)
         assert_int_equal(bio_allocate(0, 1, RAMDISK_BLOCK_SIZE, UU_PART, "x"), i);
 
     assert_int_equal(bio_allocate(0, 1, RAMDISK_BLOCK_SIZE, UU_PART, "x"), -PB_ERR_MEM);
-    dev = bio_allocate_parent(f->part, 0, 1, RAMDISK_BLOCK_SIZE, UU_PART, "x");
+    lba_t first = (lba_t)bio_get_first_block(f->part);
+    dev = bio_allocate_parent(f->part, first, first + 1, RAMDISK_BLOCK_SIZE, UU_PART, "x");
     assert_int_equal(dev, -PB_ERR_MEM);
 }
 

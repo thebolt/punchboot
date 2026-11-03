@@ -1,3 +1,0 @@
-# bio_allocate_parent does not check that the partition lies inside its
-# parent (with F-158 an on-disk GPT entry can be anywhere)
-a child lies inside its parent                             # F-163
