@@ -138,6 +138,10 @@ static int load_auth_verify_from_bio(void)
     }
 
     /* Load header located at the end of the partition */
+    if ((size_t)bio_get_no_of_blocks(boot_device) <
+        sizeof(struct bpak_header) / bio_block_size(boot_device))
+        return -PB_ERR_PART_NOT_BOOTABLE;
+
     header_lba = bio_get_no_of_blocks(boot_device) -
                  (sizeof(struct bpak_header) / bio_block_size(boot_device));
 

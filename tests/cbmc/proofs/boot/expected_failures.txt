@@ -1,4 +1,0 @@
-# The header LBA (blocks - 8) wraps for a partition of fewer than 8 blocks;
-# bio_read then rejects it, so it is only an error path.
-return_value_bio_get_no_of_blocks - sizeof(struct bpak_header)                # F-159
-64: type conversion in (lba_t)((unsigned long int)return_value_bio_get_no_of_blocks  # F-159
