@@ -90,8 +90,12 @@ CHECK_FLAGS := $(filter-out $(CHECK_FLAGS_OFF),$(DEFAULT_CHECKS))
 # By default CBMC turns a self loop (while (1) {}) into assume(false), which
 # silently drops every path that hangs. Keep it a loop, so the unwinding
 # assertion reports the hang.
+# --slice-formula drops the assignments no property depends on: it halves the
+# solver time of the larger proofs. Other solvers (CaDiCaL, Kissat, Z3, cvc5,
+# Bitwuzla) were not faster than the default MiniSat (2026-11-03).
 CBMC_FLAGS = --function harness $(CHECK_FLAGS) --unwind $(UNWIND) \
-             --unwinding-assertions --no-self-loops-to-assumptions $(CBMC_EXTRA)
+             --unwinding-assertions --no-self-loops-to-assumptions --slice-formula \
+             $(CBMC_EXTRA)
 
 .PHONY: all check cover clean
 
