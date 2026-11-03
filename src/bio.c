@@ -53,6 +53,10 @@ bio_dev_t bio_allocate(lba_t first_lba,
     if (first_lba > last_lba)
         return -PB_ERR_PARAM;
 
+    /* The getters return LBAs and block counts as int (F-157) */
+    if (last_lba >= INT32_MAX)
+        return -PB_ERR_PARAM;
+
     memset(&bio_pool[n_bios], 0, sizeof(struct bio_device));
     bio_pool[n_bios].first_lba = first_lba;
     bio_pool[n_bios].last_lba = last_lba;
@@ -165,7 +169,8 @@ int64_t bio_size(bio_dev_t dev)
     if (rc != PB_OK)
         return rc;
 
-    return (bio_pool[dev].last_lba - bio_pool[dev].first_lba + 1) * (int64_t)bio_pool[dev].block_sz;
+    return ((int64_t)bio_pool[dev].last_lba - bio_pool[dev].first_lba + 1) *
+           (int64_t)bio_pool[dev].block_sz;
 }
 
 ssize_t bio_block_size(bio_dev_t dev)

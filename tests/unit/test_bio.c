@@ -162,6 +162,8 @@ static void test_allocate_rejects(void **state)
 
     assert_int_equal(bio_allocate(0, 1, 0, UU_PART, "x"), -PB_ERR_PARAM);
     assert_int_equal(bio_allocate(2, 1, RAMDISK_BLOCK_SIZE, UU_PART, "x"), -PB_ERR_PARAM);
+    /* The getters return LBAs and block counts as int (F-157) */
+    assert_int_equal(bio_allocate(0, INT32_MAX, RAMDISK_BLOCK_SIZE, UU_PART, "x"), -PB_ERR_PARAM);
 }
 
 static void test_allocate_pool_full(void **state)
