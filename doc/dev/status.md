@@ -51,14 +51,14 @@ the host half of 4 are done (`compatibility.md`, Guards).
   (D-020, temporary). Bugs found on the way: F-143, F-144, F-147 (open). Left: de-duplication
   F-145 (porting API part on hold), ATF F-146, boards F-033/F-051.
 
-**CBMC (branch `cbmc`, D-022):** about 60 proofs in `tests/cbmc` at 32 and 64 bit (`verification.md`):
+**CBMC (branch `cbmc`, D-022):** 76 proofs in `tests/cbmc` at 32 and 64 bit (`verification.md`):
 the pre-auth parsers (bpak, der, gpt, signature), the root of trust and SLC, every libc string
 function against C11, bio, ab_state, ramlog, tzc380, image verification, the boot flow, the
-command mode gate and handlers, crypto dispatch. They found F-148..F-163; fixed F-001, F-070,
-F-089, F-150 (i.MX6UL revoke fuse), F-151, F-152, F-154..F-156, F-158..F-163 (F-161: the auth gate
-failed open on an SLC read error, D-023), each a `bugfix:` commit with its proof as the test.
-Open from them: F-055/F-075 (erase), F-065/F-148/F-149 (signed images, need a D-008 decision),
-F-157, F-006 overlap, F-066. Host unit tests pass; integration tests not run outside the container.
+command mode gate and handlers, crypto dispatch. They found F-148..F-167; all of them and F-001,
+F-006, F-055, F-066, F-070, F-074, F-075, F-089 are fixed, each a `bugfix:` commit with its proof
+as the test (D-023 fail-closed gate, D-024 erase and GPT, D-025 malformed signed headers). F-065
+has hardening left that is not a parser bug. All proofs pass with no expected failures, every
+mutant is caught; host tests pass, also in the dev container with cbmc 6.6.0.
 
 **Hard rule (D-008):** never break wire or bpak compatibility. See `compatibility.md`.
 
@@ -71,8 +71,7 @@ F-157, F-006 overlap, F-066. Host unit tests pass; integration tests not run out
    `jtag-debugging`) fixes F-057, F-058..F-062, F-072, F-085, F-086, F-049 (no compile warnings
    left), F-088, F-082 (checked on jiffy), `plat_get_boot_source()` (D-009) in
    `board status` (jiffy: eMMC slot or USB), and `board command dump-rom-log` (NXP AN12853).
-   Next from the review: F-055
-   (erase), F-063, F-070, the rest of F-066 and F-067 (SIGPIPE, orphaned pb-host, `-m32`).
+   Next from the review: F-063 and F-067 (SIGPIPE, orphaned pb-host, `-m32`).
    F-071 (pb adds missing DTB properties, with spare RAM, a performance note and a jiffy test) is
    planned in the roadmap, Phase 1.
 3. Compatibility guards: 1, 2 and 4 (host side: transcripts served to the host) are done. Next: 3
@@ -81,7 +80,7 @@ F-157, F-006 overlap, F-066. Host unit tests pass; integration tests not run out
    `compat-guards` also carries the jiffy HAB signing commits, to be split onto their own branch.
 4. F-049 is fixed: consider `-Werror` for the host build.
    PR #65 (`high-prio-fixes`, replaces PR #64) is merged (2026-10-23): all of `jiffy-fixes`,
-   F-084, F-005, F-063, F-094. Next: F-001, F-004, F-081. F-055/F-075 (erase) get their own PR.
+   F-084, F-005, F-063, F-094. Next: F-004, F-081.
    Branch `remove-codecov` removes Codecov (D-012); Jonas turns off the Codecov app.
 5. Phase 1: security fixes F-001, F-004, each with a test (F-002 is intended, D-011).
 6. JTAG: `scripts/pbdebug jiffy` (ULINK + OpenOCD + GDB, `build-and-test.md`); `--load` loads pb

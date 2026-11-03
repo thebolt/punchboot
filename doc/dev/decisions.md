@@ -221,3 +221,26 @@ Why: the gate only closed for CONFIGURATION_LOCKED, so a HAB or SECO error (F-15
 command on a locked device (F-161, found by the CBMC `cm-gate` proof). A device whose SLC can't be
 read can still be used with the auth token or password. The wire protocol is unchanged (D-008).
 
+
+## D-024: Partition erase is checked; on-disk GPT entries that overlap are skipped (2026-11-03)
+
+PART_ERASE erases inside the partition only (`start_lba` stays partition-relative on the wire, as
+hosts send it), refuses a partition without BIO_FLAG_WRITABLE, and a block count of 0 erases the
+whole partition. GPT entries that overlap an earlier accepted entry are skipped with an error
+instead of becoming a second partition over the same blocks.
+Why: on imxrt an erase from LBA 0 of any partition erased the start of NOR (F-055), pre-2.0 hosts
+send a block count of 0 and got OK with nothing erased (F-075), and overlapping entries let one
+partition write another's blocks (F-006). No valid host request or partition table changes
+meaning, so this is not a D-008 break; the wire format is unchanged.
+
+## D-025: Malformed signed image headers are rejected (2026-11-03)
+
+`bpak_valid_header` rejects a part whose size + pad wraps, or whose offset doesn't fit an `off_t`.
+The bpak getters stop at the first empty slot, as `bpak_valid_header` does. A part's pb-load-addr
+must be a u64 and the part must fit in the address space above it.
+Why: these headers need the signing key, but the code that reads them read past the metadata
+(F-148), mis-sized parts (F-149) and let CHECK_OVERLAP wrap, so a part could load over the
+firmware (F-065). No tool produces such a header (bpak keeps entries packed, writes the load
+address as a u64, and real parts are far below 2^63 bytes), so every image a release accepted is
+still accepted (D-008). A 32-bit device still accepts a bpak with parts over 4 GiB in command
+mode; only booting one is refused.

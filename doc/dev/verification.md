@@ -63,14 +63,14 @@ How to run and add proofs: `tests/cbmc/README.md`.
 |---|---|---|---|---|---|
 | `crc` | `src/lib/crc.c` | Memory safety; one step equals the bitwise CRC-32 (so all lengths, by induction); incremental `crc32(a‖b)` | len ≤ 16, incremental ≤ 2 | | 22 s / 22 s |
 | `wire` | `src/wire.c` | `valid_command` is exactly magic + range; only IDENTIFIER_READ and AUTHENTICATE need no auth; `init_*2` size checks, no write outside the struct | none (fully symbolic structs) | | 3 s / 5 s |
-| `bpak-header` | `bpak_valid_header` (pre-auth) | No UB for any 4 KiB header; OK implies magic, hash kind, alignment and metadata bounds for the slots before the first empty one | none | F-149 | 55 s / 55 s |
+| `bpak-header` | `bpak_valid_header` (pre-auth) | No UB for any 4 KiB header; OK implies magic, hash kind, alignment without wrap (F-149) and metadata bounds for the slots before the first empty one | none | | 55 s / 55 s |
 | `bpak-signature` | `bpak_copyz_signature` (pre-auth) | No access outside the header or the output buffer; OK only for 0 < sz ≤ min(512, buffer); signature copied, area and size zeroed; header unchanged on error | buffer ≤ 1 KiB | | 5 s / 5 s |
-| `bpak-getters` | `bpak_get_meta`, `_anyref`, `bpak_get_part` | Returned entry is a header slot with the requested id/ref; checked slots have metadata in bounds | valid header | F-148, F-149 | 83 s / 83 s |
-| `bpak-part` | `bpak_part_size`, `bpak_part_offset` | No wrap or truncation; offset = 4096 + earlier part sizes | any header; offset for the first 3 slots | F-148, F-149 | 42 s / 223 s |
+| `bpak-getters` | `bpak_get_meta`, `_anyref`, `bpak_get_part` | Returned entry is a header slot before the first empty one with the requested id/ref, metadata in bounds (F-148) | valid header | | 83 s / 83 s |
+| `bpak-part` | `bpak_part_size`, `bpak_part_offset` | No wrap; the size exact when it fits `size_t`; offset = 4096 + the 64 bit sum of the earlier part sizes (F-148, F-149) | valid header; offset for the first 3 slots | | 42 s / 223 s |
 | `der-ecsig` | `der_ecsig_to_rs` (pre-auth, CAAM) | No access outside sig, r, s for any input; OK implies a SEQUENCE | sig ≤ 24 bytes, curve length ≤ 8 (see harness) | | 28 s / 38 s |
-| `der-pubkey` | `der_ec_public_key_data` (trusted keystore) | Memory safety | key ≤ 160 bytes | F-066 | 3 s / 5 s |
+| `der-pubkey` | `der_ec_public_key_data` (trusted keystore) | Memory safety within the given key length (F-066) | key ≤ 160 bytes | | 3 s / 5 s |
 | `slc` | `src/slc.c` | Without a config or callback: NOT_SUPPORTED, no NULL call | none | | 1 s / 1 s |
-| `rot` | `src/rot.c` | `rot_init` accepts exactly a matching key map; status/revoke act on the requested key; `rot_get_dsa_key` only returns a key the board reports OK, with its data and kind; no error codes as counts or ids | 3 keys | F-153 (`rot_key_idx_to_id`) | 1 s / 1 s |
+| `rot` | `src/rot.c` | `rot_init` accepts exactly a matching key map; status/revoke act on the requested key; `rot_get_dsa_key` only returns a key the board reports OK, with its data and kind; no error codes as counts or ids (F-153) | 3 keys | | 1 s / 1 s |
 | `rot-imx6ul` | i.MX6UL `rot_helpers.c`, `slc_helpers.c` | Revoked key reads as revoked; revoke burns only the key's bit; LOCKED exactly when HAB reports secure boot; lock fuse burnt only from an unlocked state | param1 < 4 | | 1 s / 1 s |
 | `rot-imx8x` | i.MX8X `rot_helpers.c`, `slc_helpers.c` | REVOKED exactly when the key's SECO bit is set; LOCKED exactly when SECO reports OEM closed; fail closed when SECO can't be asked; forward only with the SRK fused | param1 < 4 | | 1 s / 1 s |
 | `slc-imxrt` | i.MX RT `slc_helpers.c`, `rot_helpers.c` | LOCKED exactly when SEC_CONFIG is set; NOT_CONFIGURED means no SRK bits; no revocation support | none | | 1 s / 1 s |
@@ -81,18 +81,19 @@ How to run and add proofs: `tests/cbmc/README.md`.
 | `uuid-parse` | `uuid_parse` | Accepts exactly the canonical 8-4-4-4-12 hex form; the bytes are the hex digits in order | strings ≤ 38 bytes | | 80 s |
 | `uuid-roundtrip` | `uuid_unparse`, `uuid_parse` (with the firmware `snprintf`, `strtoul`) | Any UUID unparses to a 36 character lower case canonical string and parses back to itself | none | | see CI |
 | `uuid-pack` | uuid pack/unpack, compare, copy, clear, is_null | unpack∘pack is the identity; compare orders like the bytes; copy, clear, is_null | none | | 1 s |
-| `bio`, `bio-4k` | `src/bio.c` | Read/write reach the HAL only inside the device with the absolute LBA; sizes and getters exact; invalid handles rejected; lookup by UUID | one device, any LBAs, 512 / 4096 byte blocks | F-055 (erase), F-157 | 70 s / 110 s |
+| `bio`, `bio-4k` | `src/bio.c` | Read, write and erase reach the HAL only inside the device with the absolute LBA (F-055); sizes and getters exact (F-157); invalid handles rejected; lookup by UUID | one device, any LBAs, 512 / 4096 byte blocks | | 70 s / 110 s |
 | `bio-child` | `bio_allocate_parent` | A partition lies inside its disk and has its flags | a fixed disk | | see CI |
-| `gpt`, `gpt-recover-primary`, `gpt-recover-backup` | `gpt_ptbl_init` (pre-auth, on disk contents) | No access outside the tables for any contents, both recovery paths; at most 128 entries (F-056); partitions inside the disk and not overlapping | 3 entries in use; `gpt_write_tbl` and table copies abstracted | F-006 (overlap) | 1-2 s |
-| `gpt-write`, `gpt-write-128` | `gpt_write_tbl` | Every write inside the disk, CRCs inside the tables | 3 (recovered) / 128 (installed) entries | `err` type (F-162) | 1 s |
+| `gpt`, `gpt-recover-primary`, `gpt-recover-backup` | `gpt_ptbl_init` (pre-auth, on disk contents) | No access outside the tables for any contents, both recovery paths; at most 128 entries (F-056); partitions inside the disk and not overlapping (F-006) | 3 entries in use; `gpt_write_tbl` and table copies abstracted | | 1-2 s |
+| `gpt-write`, `gpt-write-128` | `gpt_write_tbl` | Every write inside the disk, CRCs inside the tables (F-162) | 3 (recovered) / 128 (installed) entries | | 1 s |
 | `ab-state` | `src/boot/ab_state.c` | A valid state after init for any disk state; boots A, B or nothing; an unverified system only with an attempt left (counter goes down by one) or by the speculative rollback; board registers inside the array | any state, any CRC | | 2 s |
 | `ramlog` | `src/ramlog.c` | Nothing before init; putc at head % size; read copies exactly what is in the ring after offset | 1 KiB log, reads up to 64 bytes | | 6 s / 10 s |
 | `tzc380` | `src/drivers/tzc/tzc380.c` | A region is programmed only with a valid number, power-of-two size >= 32 KiB inside the address width, aligned base, SP bits only; exactly base and attribute registers | any config register | | 1 s |
-| `ih-auth` | `boot_image_auth_header` (pre-auth) | OK only when dsa_verify verified; the header's signature, digest length of its hash kind; the whole header hashed once with the signature zeroed; the key only if not revoked | any header | F-149 | 7 s |
-| `ih-verify-parts` | `boot_image_verify_parts` | OK means no part loads over stack, data, bss, code, no_init (any layout) and the load address fits | 2 parts | F-065, F-149 | 290 s / 230 s |
-| `ih-load` | `boot_image_load_and_hash` | Hashes exactly what was read, chunk by chunk; OK means every chunk read and hashed | 2 parts of up to 3 chunks | F-065, F-149 | 270 s / 640 s |
+| `ih-auth` | `boot_image_auth_header` (pre-auth) | OK only when dsa_verify verified; the header's signature, digest length of its hash kind; the whole header hashed once with the signature zeroed; the key only if not revoked | any header | | 7 s |
+| `ih-verify-parts` | `boot_image_verify_parts` | OK means every region (stack, data, bss, code, no_init, any layout) was checked with the part's whole range, which does not wrap, and where the code found a region clear it is (F-065) | one part, its load address in the first metadata entry; `CHECK_OVERLAP` records its range and checks each call | | 10 s / 25 s |
+| `ih-verify-parts-read` | `part_load_addr` | For any metadata layout: OK means the pb-load-addr entry is a u64, the address is its value, and the part fits above it (F-065) | one part, 4 metadata entries | | 240 s / 260 s |
+| `ih-load` | `boot_image_load_and_hash` | Hashes exactly what was read, chunk by chunk; OK means every chunk read and hashed | 2 parts of up to 3 chunks | | 270 s / 640 s |
 | `ih-copy` | `boot_image_copy_and_hash` | Copies inside source and destination (F-088); hashes the copy | one part up to 512 bytes, buffers up to 256 | | 5 s |
-| `ih-payload` | `boot_image_verify_payload` | OK only for a known hash kind and a matching digest of its length | any header | F-149 | 5 s |
+| `ih-payload` | `boot_image_verify_payload` | OK only for a known hash kind and a matching digest of its length | any header | | 5 s |
 | `boot` | `src/boot/boot.c` | prepare, late_boot and jump only for the header authenticated, checked, loaded and verified in this boot_load | two boots, any sources; image helpers abstracted (`ih-*`) | | 9 s |
 | `cm-gate` | `pb_command_parse` | A command that needs authentication does nothing unauthenticated unless the SLC is a valid unlocked state (fails closed, D-023) | any command bytes and slc; every external call fails | | 1 s |
 | `cm-*` (14 proofs, one per command) | the command handlers in `cm_main.c` | Authenticated, any command bytes, host data and results of the called modules: no undefined behaviour, every transport read and write inside a valid buffer | the called modules as contracts (`stubs/cm_env.c`: bio with 512 byte blocks, up to 17 keys, ramlog), everything else any value | | 4-50 s |
@@ -105,7 +106,8 @@ properties pin the results down instead.
 
 Known failures are listed per proof in `expected_failures.txt`. A proof fails on any other
 failure, and also when a known one stops failing (then the list is updated and the proof becomes
-the fix's regression test).
+the fix's regression test). No proof has one now: the last ones, implementation-defined
+conversions in `pb_wire_init_result` and `efi_crc32`, are fixed (F-167).
 
 ## Trust boundary
 
@@ -116,7 +118,7 @@ What the proofs assume rather than prove. Each stub states its contract in its f
 | String functions in proofs other than libc | Replaced by models | C standard semantics |
 | Mbed TLS, CAAM and other crypto drivers | Out of scope | `stubs/crypto.c`: any result, a digest of the asked length; the dispatch is the `crypto` proof |
 | littlefs, libfdt | Vendored, large | littlefs: not used before an image is verified; libfdt: only on the signed device tree |
-| `src/boot/linux.c`, `src/boot/atf.c` | Run on the verified image only (device tree patching through libfdt) | Their load address reads are the F-065 pattern, proven in `ih-verify-parts` and `ih-load` |
+| `src/boot/linux.c`, `src/boot/atf.c` | Run on the verified image only (device tree patching through libfdt) | They run after `boot_image_verify_parts`, which checks every part's load address (`ih-verify-parts`) |
 | USB, MMC, UART hardware, SoC code | Hardware | The transport reads into and writes from the buffers it is given (`cm-handlers`) |
 
 ## Plan
@@ -128,7 +130,8 @@ From the approved plan (2026-11-02), ordered by attacker reachability:
   Then every function in `src/lib/libc` against its C standard definition, and `uuid` (found
   F-154..F-156, confirmed F-089).
 - **Phase 2:** done: `bio`, `gpt`, `image_helpers`, `ab_state`, `ramlog`, `tzc380` (found
-  F-157, F-158, F-162, F-163; confirmed F-055, F-065, F-006).
+  F-157, F-158, F-162, F-163; confirmed F-055, F-065, F-006). All of them are fixed (D-024,
+  D-025); F-065 has hardening left that is not a parser bug.
 - **Phase 3:** done: `boot.c`, the auth gate, one proof per command handler, crypto dispatch
   (confirmed F-070, F-074; found F-159, F-161, F-164..F-166). `atf.c`, `linux.c` and libfdt are
   in the trust boundary (signed input only).
