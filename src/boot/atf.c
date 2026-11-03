@@ -57,12 +57,32 @@ static uint32_t atf_bl33_spsr(void)
     return SPSR_64(mode, MODE_SP_ELX, DISABLE_ALL_EXCEPTIONS);
 }
 
+/* A part's pb-load-addr: a u64 that fits a pointer (D-025) */
+static int load_addr(struct bpak_header *hdr, bpak_id_t id, uintptr_t *addr)
+{
+    struct bpak_meta_header *mh;
+    uint64_t value;
+
+    if (bpak_get_meta(hdr, BPAK_ID_PB_LOAD_ADDR, id, &mh) != BPAK_OK || mh->size < sizeof(value))
+        return -PB_ERR_BAD_META;
+
+    value = *bpak_get_meta_ptr(hdr, mh, uint64_t);
+
+    if (value > UINTPTR_MAX)
+        return -PB_ERR_BAD_META;
+
+    *addr = (uintptr_t)value;
+    return PB_OK;
+}
+
 static uint32_t atf_optee_rw(struct bpak_header *hdr)
 {
 #ifdef __aarch64__
     struct bpak_meta_header *mh;
 
-    if (bpak_get_meta_anyref(hdr, BPAK_ID_OPTEE_ARCH, &mh) == BPAK_OK)
+    /* An entry shorter than a u32 is not read (D-025) */
+    if (bpak_get_meta_anyref(hdr, BPAK_ID_OPTEE_ARCH, &mh) == BPAK_OK &&
+        mh->size >= sizeof(uint32_t))
         return (*bpak_get_meta_ptr(hdr, mh, uint32_t) == 32) ? MODE_RW_32 : MODE_RW_64;
 
     return MODE_RW_64;
@@ -95,29 +115,27 @@ int boot_driver_atf_prepare(struct bpak_header *hdr, uuid_t boot_part_uu)
     void *fdt;
     size_t ramdisk_length;
     struct bpak_part_header *ph;
-    struct bpak_meta_header *mh;
+    uintptr_t addr;
 
-    rc = bpak_get_meta(hdr, BPAK_ID_PB_LOAD_ADDR, cfg->atf_bpak_id, &mh);
+    rc = load_addr(hdr, cfg->atf_bpak_id, &jump_addr);
 
-    if (rc != BPAK_OK) {
+    if (rc != PB_OK) {
         LOG_ERR("Could not read ATF image meta data (%i)", rc);
-        return -PB_ERR_BAD_META;
+        return rc;
     }
-
-    jump_addr = (uintptr_t)*bpak_get_meta_ptr(hdr, mh, uint64_t);
 
     LOG_INFO("Boot entry: 0x%" PRIxPTR, jump_addr);
 
     device_uuid(device_uu);
     uuid_unparse(device_uu, device_uu_str);
 
-    rc = bpak_get_meta(hdr, BPAK_ID_PB_LOAD_ADDR, cfg->bl33_bpak_id, &mh);
-    if (rc != BPAK_OK) {
+    rc = load_addr(hdr, cfg->bl33_bpak_id, &addr);
+    if (rc != PB_OK) {
         LOG_ERR("Could not read BL33 image meta data (%i)", rc);
-        return -PB_ERR_BAD_META;
+        return rc;
     }
 
-    atf_bl33_info.image_base = atf_bl33_ep.pc = (uintptr_t)*bpak_get_meta_ptr(hdr, mh, uint64_t);
+    atf_bl33_info.image_base = atf_bl33_ep.pc = addr;
 
     rc = bpak_get_part(hdr, cfg->bl33_bpak_id, &ph);
     if (rc != BPAK_OK) {
@@ -130,14 +148,13 @@ int boot_driver_atf_prepare(struct bpak_header *hdr, uuid_t boot_part_uu)
     LOG_INFO("BL33: %" PRIxPTR " (%u bytes)", atf_bl33_info.image_base, atf_bl33_info.image_size);
 
     if (cfg->bl32_bpak_id) {
-        rc = bpak_get_meta(hdr, BPAK_ID_PB_LOAD_ADDR, cfg->bl32_bpak_id, &mh);
-        if (rc != BPAK_OK) {
+        rc = load_addr(hdr, cfg->bl32_bpak_id, &addr);
+        if (rc != PB_OK) {
             LOG_ERR("Could not read BL32 image meta data (%i)", rc);
-            return -PB_ERR_BAD_META;
+            return rc;
         }
 
-        atf_bl32_info.image_base = atf_bl32_ep.pc =
-            (uintptr_t)*bpak_get_meta_ptr(hdr, mh, uint64_t);
+        atf_bl32_info.image_base = atf_bl32_ep.pc = addr;
 
         rc = bpak_get_part(hdr, cfg->bl32_bpak_id, &ph);
         if (rc != BPAK_OK) {
@@ -163,13 +180,11 @@ int boot_driver_atf_prepare(struct bpak_header *hdr, uuid_t boot_part_uu)
     }
 
     if (cfg->ramdisk_bpak_id) {
-        rc = bpak_get_meta(hdr, BPAK_ID_PB_LOAD_ADDR, cfg->ramdisk_bpak_id, &mh);
-        if (rc != BPAK_OK) {
+        rc = load_addr(hdr, cfg->ramdisk_bpak_id, &ramdisk_addr);
+        if (rc != PB_OK) {
             LOG_ERR("Could not read ramdisk image meta data (%i)", rc);
-            return -PB_ERR_BAD_META;
+            return rc;
         }
-
-        ramdisk_addr = (uintptr_t)*bpak_get_meta_ptr(hdr, mh, uint64_t);
 
         LOG_INFO("Ramdisk: %" PRIxPTR, ramdisk_addr);
     }
@@ -182,14 +197,14 @@ int boot_driver_atf_prepare(struct bpak_header *hdr, uuid_t boot_part_uu)
             return -PB_ERR_BAD_META;
         }
 
-        rc = bpak_get_meta(hdr, BPAK_ID_PB_LOAD_ADDR, cfg->dtb_bpak_id, &mh);
+        rc = load_addr(hdr, cfg->dtb_bpak_id, &addr);
 
-        if (rc != BPAK_OK) {
+        if (rc != PB_OK) {
             LOG_ERR("Could not read dtb load addr meta");
-            return -PB_ERR_BAD_META;
+            return rc;
         }
 
-        atf_bl33_ep.args.arg0 = *bpak_get_meta_ptr(hdr, mh, uint64_t);
+        atf_bl33_ep.args.arg0 = addr;
         LOG_INFO("DTB: %" PRIxPTR, atf_bl33_ep.args.arg0);
 
         if (cfg->bl32_bpak_id)
