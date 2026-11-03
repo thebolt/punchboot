@@ -276,6 +276,9 @@ int boot_load(uuid_t boot_part_override_uu)
     }
 
     uuid_clear(boot_part_uu);
+    /* The IN_MEM and CUSTOM sources point it elsewhere, a later boot must not
+     * prepare and jump to that header (F-070) */
+    header_ptr = &header;
 
     if (boot_part_override_uu != NULL) {
         uuid_copy(boot_part_uu, boot_part_override_uu);
