@@ -33,6 +33,31 @@ IMPORT_SYM(uintptr_t, _no_init_end, no_init_end);
 
 static uint8_t signature[512];
 
+/* Reads the load address of part p. The part must fit the address space
+ * above it, so load_addr + size doesn't wrap (F-065). */
+static int part_load_addr(struct bpak_header *hdr, struct bpak_part_header *p, uintptr_t *load_addr)
+{
+    struct bpak_meta_header *mh;
+    uint64_t addr;
+    uint64_t size = (p->flags & BPAK_FLAG_TRANSPORT) ? p->transport_size : p->size + p->pad_bytes;
+
+    if (bpak_get_meta(hdr, BPAK_ID_PB_LOAD_ADDR, p->id, &mh) != BPAK_OK ||
+        mh->size < sizeof(addr)) {
+        LOG_ERR("Could not read pb-entry for part %x", p->id);
+        return -PB_ERR_BAD_META;
+    }
+
+    addr = *bpak_get_meta_ptr(hdr, mh, uint64_t);
+
+    if (addr > UINTPTR_MAX || size > UINTPTR_MAX - addr) {
+        LOG_ERR("Part %x does not fit at its load address", p->id);
+        return -PB_ERR_MEM;
+    }
+
+    *load_addr = (uintptr_t)addr;
+    return PB_OK;
+}
+
 int boot_image_auth_header(struct bpak_header *hdr)
 {
     int rc;
@@ -131,7 +156,6 @@ int boot_image_auth_header(struct bpak_header *hdr)
 
 int boot_image_verify_parts(struct bpak_header *hdr)
 {
-    struct bpak_meta_header *mh;
     int rc = PB_OK;
 
     rc = bpak_valid_header(hdr);
@@ -144,15 +168,13 @@ int boot_image_verify_parts(struct bpak_header *hdr)
         if (!p->id)
             break;
 
-        rc = bpak_get_meta(hdr, BPAK_ID_PB_LOAD_ADDR, p->id, &mh);
+        uintptr_t load_addr;
 
-        if (rc != BPAK_OK) {
-            LOG_ERR("Could not read pb-entry for part %x", p->id);
-            rc = -PB_ERR_BAD_META;
+        rc = part_load_addr(hdr, p, &load_addr);
+
+        if (rc != PB_OK)
             break;
-        }
 
-        uintptr_t load_addr = (uintptr_t)*bpak_get_meta_ptr(hdr, mh, uint64_t);
         size_t bytes_to_read = bpak_part_size(p);
 
         if (CHECK_OVERLAP(load_addr, bytes_to_read, stack_start, stack_end)) {
@@ -222,7 +244,6 @@ int boot_image_load_and_hash(struct bpak_header *hdr,
     uintptr_t load_addr;
     int hash_kind;
     size_t hash_length;
-    struct bpak_meta_header *mh;
 
     rc = bpak_valid_header(hdr);
 
@@ -263,15 +284,10 @@ int boot_image_load_and_hash(struct bpak_header *hdr,
             break;
 
         load_addr = 0;
-        rc = bpak_get_meta(hdr, BPAK_ID_PB_LOAD_ADDR, p->id, &mh);
+        rc = part_load_addr(hdr, p, &load_addr);
 
-        if (rc != BPAK_OK) {
-            LOG_ERR("Could not read pb-entry for part %x", p->id);
-            rc = -PB_ERR_BAD_META;
+        if (rc != PB_OK)
             break;
-        }
-
-        load_addr = (uintptr_t)*bpak_get_meta_ptr(hdr, mh, uint64_t);
 
         LOG_DBG("Loading part %x --> %" PRIxPTR ", %zu bytes", p->id, load_addr, bpak_part_size(p));
 

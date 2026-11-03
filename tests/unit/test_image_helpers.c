@@ -321,6 +321,22 @@ static void test_verify_parts_rejects_pb_memory(void **state)
     assert_int_equal(boot_image_verify_parts(hdr), PB_OK);
 }
 
+static void test_verify_parts_load_addr_fits(void **state)
+{
+    struct bpak_meta_header *meta;
+    (void)state;
+
+    /* The part would wrap past the top of the address space (F-065) */
+    make_header(BPAK_HASH_SHA256, FREE_RAM, 1024, UINTPTR_MAX - 511, 1024);
+    assert_int_equal(boot_image_verify_parts(hdr), -PB_ERR_MEM);
+
+    /* The load address is not a u64 (F-065) */
+    make_header(BPAK_HASH_SHA256, FREE_RAM, 1024, FREE_RAM + 0x1000, 1024);
+    assert_int_equal(bpak_get_meta(hdr, BPAK_ID_PB_LOAD_ADDR, ID_DTB, &meta), BPAK_OK);
+    meta->size = 4;
+    assert_int_equal(boot_image_verify_parts(hdr), -PB_ERR_BAD_META);
+}
+
 /* Fake storage: the image payload, read through read_f */
 static uint8_t payload[3 * 1024];
 static uint8_t load_area[3 * 1024];
@@ -630,6 +646,7 @@ int main(void)
         IMG_TEST(test_verify_parts),
         IMG_TEST(test_verify_parts_needs_load_addr),
         IMG_TEST(test_verify_parts_rejects_pb_memory),
+        IMG_TEST(test_verify_parts_load_addr_fits),
         IMG_TEST(test_load_and_hash),
         IMG_TEST(test_load_and_hash_in_memory),
         IMG_TEST(test_load_and_hash_digest_sizes),
