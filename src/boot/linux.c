@@ -108,10 +108,23 @@ int boot_driver_linux_prepare(struct bpak_header *hdr, uuid_t boot_part_uu)
 
         /* Locate the chosen node */
         fdt = (void *)dtb_addr;
+
+        if (dtb_length < sizeof(struct fdt_header)) {
+            LOG_ERR("Invalid device tree");
+            return -PB_ERR;
+        }
+
         rc = fdt_check_header(fdt);
 
         if (rc < 0) {
             LOG_ERR("Invalid device tree");
+            return -PB_ERR;
+        }
+
+        /* libfdt reads and patches the tree up to its total size, which
+         * must be inside the part that was loaded and verified */
+        if (fdt_totalsize(fdt) > dtb_length) {
+            LOG_ERR("Device tree is larger than its part");
             return -PB_ERR;
         }
 

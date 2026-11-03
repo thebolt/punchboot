@@ -394,6 +394,25 @@ static void test_dtb_errors(void **state)
     part->id = ID_DTB;
 }
 
+/* libfdt reads and patches the tree up to its total size: a tree larger
+ * than its part, or a part too small for the header, is refused */
+static void test_dtb_larger_than_part(void **state)
+{
+    struct bpak_part_header *part;
+    (void)state;
+
+    assert_int_equal(boot_driver_linux_init(&cfg_dtb), PB_OK);
+    assert_int_equal(bpak_get_part(hdr, ID_DTB, &part), BPAK_OK);
+
+    part->size = fdt_totalsize(dtb) - 1;
+    assert_int_equal(boot_driver_linux_prepare(hdr, boot_part_uu), -PB_ERR);
+    part->size = sizeof(struct fdt_header) - 1;
+    assert_int_equal(boot_driver_linux_prepare(hdr, boot_part_uu), -PB_ERR);
+
+    part->size = fdt_totalsize(dtb);
+    assert_int_equal(boot_driver_linux_prepare(hdr, boot_part_uu), PB_OK);
+}
+
 /* Grow the device tree's free space one step at a time: every property that
  * doesn't fit must fail the boot, until everything fits */
 static void test_dtb_out_of_space(void **state)
@@ -432,6 +451,7 @@ int main(void)
         LINUX_TEST(test_dtb_is_patched),
         LINUX_TEST(test_dtb_without_options),
         LINUX_TEST(test_dtb_errors),
+        LINUX_TEST(test_dtb_larger_than_part),
         LINUX_TEST(test_dtb_out_of_space),
     };
 
