@@ -221,15 +221,26 @@ int boot_driver_linux_prepare(struct bpak_header *hdr, uuid_t boot_part_uu)
 
             ramdisk_length = bpak_part_size(ph);
 
-            rc = fdt_setprop_u32((void *)fdt, offset, "linux,initrd-start", ramdisk_addr);
+            /* One cell as before, two when the ramdisk ends above 4 GiB
+             * (Linux reads either) */
+            uint64_t ramdisk_end = (uint64_t)ramdisk_addr + ramdisk_length;
+
+            if (ramdisk_end <= UINT32_MAX)
+                rc = fdt_setprop_u32(
+                    (void *)fdt, offset, "linux,initrd-start", (uint32_t)ramdisk_addr);
+            else
+                rc = fdt_setprop_u64((void *)fdt, offset, "linux,initrd-start", ramdisk_addr);
 
             if (rc != 0) {
                 LOG_ERR("fdt error: ramdisk (%i)", rc);
                 return -PB_ERR;
             }
 
-            rc = fdt_setprop_u32(
-                (void *)fdt, offset, "linux,initrd-end", ramdisk_addr + ramdisk_length);
+            if (ramdisk_end <= UINT32_MAX)
+                rc =
+                    fdt_setprop_u32((void *)fdt, offset, "linux,initrd-end", (uint32_t)ramdisk_end);
+            else
+                rc = fdt_setprop_u64((void *)fdt, offset, "linux,initrd-end", ramdisk_end);
 
             if (rc) {
                 LOG_ERR("Could not patch initrd");

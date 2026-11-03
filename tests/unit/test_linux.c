@@ -394,6 +394,33 @@ static void test_dtb_errors(void **state)
     part->id = ID_DTB;
 }
 
+/* A ramdisk that ends above 4 GiB gets two cell properties; it was
+ * truncated to 32 bits */
+static void test_initrd_above_4g(void **state)
+{
+    struct bpak_meta_header *meta;
+    int len;
+    (void)state;
+
+    if (UINTPTR_MAX <= UINT32_MAX)
+        skip();
+
+    const uint64_t start = 0x100000000ull - RAMDISK_SIZE / 2;
+    assert_int_equal(boot_driver_linux_init(&cfg_dtb), PB_OK);
+    assert_int_equal(bpak_get_meta(hdr, BPAK_ID_PB_LOAD_ADDR, ID_RAMDISK, &meta), BPAK_OK);
+    *bpak_get_meta_ptr(hdr, meta, uint64_t) = start;
+    assert_int_equal(boot_driver_linux_prepare(hdr, boot_part_uu), PB_OK);
+
+    const fdt64_t *val = fdt_getprop(dtb, chosen(), "linux,initrd-start", &len);
+    assert_non_null(val);
+    assert_int_equal(len, 8);
+    assert_int_equal(fdt64_to_cpu(*val), start);
+    val = fdt_getprop(dtb, chosen(), "linux,initrd-end", &len);
+    assert_non_null(val);
+    assert_int_equal(len, 8);
+    assert_int_equal(fdt64_to_cpu(*val), start + RAMDISK_SIZE);
+}
+
 /* libfdt reads and patches the tree up to its total size: a tree larger
  * than its part, or a part too small for the header, is refused */
 static void test_dtb_larger_than_part(void **state)
@@ -452,6 +479,7 @@ int main(void)
         LINUX_TEST(test_dtb_without_options),
         LINUX_TEST(test_dtb_errors),
         LINUX_TEST(test_dtb_larger_than_part),
+        LINUX_TEST(test_initrd_above_4g),
         LINUX_TEST(test_dtb_out_of_space),
     };
 
