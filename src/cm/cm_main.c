@@ -645,6 +645,16 @@ static int cmd_part_erase(struct pb_command_erase_part *erase_cmd)
         return -PB_ERR_IO;
     }
 
+    /* Hosts before 2.0 send zeros: a block count of 0 is the whole
+     * partition (F-075) */
+    if (erase_cmd->block_count == 0) {
+        int blocks = bio_get_no_of_blocks(dev);
+
+        if (blocks < 0)
+            return blocks;
+        return bio_erase(dev, 0, (size_t)blocks);
+    }
+
     return bio_erase(dev, erase_cmd->start_lba, erase_cmd->block_count);
 }
 
