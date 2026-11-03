@@ -237,8 +237,18 @@ const char *bpak_error_string(int code)
     }
 }
 
+static uint64_t bpak_part_size64(struct bpak_part_header *part)
+{
+    if (part->flags & BPAK_FLAG_TRANSPORT)
+        return part->transport_size;
+    else
+        return (part->size + part->pad_bytes);
+}
+
 int bpak_valid_header(struct bpak_header *hdr)
 {
+    uint64_t offset = sizeof(*hdr);
+
     if (hdr->magic != BPAK_HEADER_MAGIC)
         return -BPAK_BAD_MAGIC;
 
@@ -247,8 +257,17 @@ int bpak_valid_header(struct bpak_header *hdr)
         if (!p->id)
             break;
 
+        if (p->size > UINT64_MAX - p->pad_bytes)
+            return -BPAK_SIZE_ERROR;
+
         if (((p->size + p->pad_bytes) % BPAK_PART_ALIGN) != 0)
             return -BPAK_BAD_ALIGNMENT;
+
+        /* Every part offset must fit an off_t */
+        if (bpak_part_size64(p) > (uint64_t)INT64_MAX - offset)
+            return -BPAK_SIZE_ERROR;
+
+        offset += bpak_part_size64(p);
     }
 
     /* Check for out-of-bounds metadata */
@@ -277,7 +296,8 @@ off_t bpak_part_offset(struct bpak_header *h, struct bpak_part_header *part)
         if (p->id == part->id)
             break;
 
-        offset += bpak_part_size(p);
+        /* bpak_part_size truncates to a 32 bit size_t on 32 bit */
+        offset += bpak_part_size64(p);
     }
 
     return offset;

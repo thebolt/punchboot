@@ -265,6 +265,18 @@ static void test_valid_header_rejects(void **state)
     assert_int_equal(bpak_valid_header(hdr), -BPAK_BAD_ALIGNMENT);
     part->pad_bytes = 24;
     assert_int_equal(bpak_valid_header(hdr), BPAK_OK);
+
+    /* size + pad_bytes wraps to 0 (F-149) */
+    part->size = UINT64_MAX - 511;
+    part->pad_bytes = 512;
+    assert_int_equal(bpak_valid_header(hdr), -BPAK_SIZE_ERROR);
+
+    /* The part offsets don't fit an off_t (F-149) */
+    part->size = (uint64_t)1 << 63;
+    part->pad_bytes = 0;
+    assert_int_equal(bpak_valid_header(hdr), -BPAK_SIZE_ERROR);
+    part->size = ((uint64_t)1 << 63) - 4096 - 512;
+    assert_int_equal(bpak_valid_header(hdr), BPAK_OK);
 }
 
 static void test_get_stops_at_empty_slot(void **state)
