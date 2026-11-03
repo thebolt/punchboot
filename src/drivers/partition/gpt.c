@@ -438,6 +438,22 @@ int gpt_ptbl_init(bio_dev_t dev, const struct gpt_table_list *default_tables, si
             continue;
         }
 
+        /* Nor overlap an entry before it (F-006) */
+        bool overlaps = false;
+        for (struct gpt_part_hdr *q = primary.part; q < p; q++) {
+            if (q->first_lba <= q->last_lba &&
+                q->last_lba <= (uint64_t)bio_get_last_block(dev) &&
+                p->first_lba <= q->last_lba && q->first_lba <= p->last_lba) {
+                overlaps = true;
+                break;
+            }
+        }
+
+        if (overlaps) {
+            LOG_ERR("Partition '%s' overlaps an earlier one, skipped", name);
+            continue;
+        }
+
         bio_dev_t new_dev =
             bio_allocate_parent(dev, p->first_lba, p->last_lba, bio_block_size(dev), uu, name);
         if (new_dev < 0) {
