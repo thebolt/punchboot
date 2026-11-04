@@ -79,7 +79,7 @@ How to run and add proofs: `tests/cbmc/README.md`.
 | `libc-snprintf-{s,u,d,x,08x}` | `snprintf` | C11 7.21.6.5: at most n - 1 characters and a NUL, returns the full length, the text the conversion defines | n ≤ 12 | | see CI |
 | `libc-snprintf-unsupported` | `snprintf` | Returns for `%c`, `%X`, `%zu`, `%2u` | n ≤ 8 | | 1 s |
 | `uuid-parse` | `uuid_parse` | Accepts exactly the canonical 8-4-4-4-12 hex form; the bytes are the hex digits in order | strings ≤ 38 bytes | | 80 s |
-| `uuid-roundtrip` | `uuid_unparse`, `uuid_parse` (with the firmware `snprintf`, `strtoul`) | Any UUID unparses to a 36 character lower case canonical string and parses back to itself | none | | see CI |
+| `uuid-roundtrip` | `uuid_unparse`, `uuid_parse` (with the firmware `snprintf`, `strtoul`) | Any UUID unparses to a 36 character lower case canonical string and parses back to itself | none | | 500-1700 s (timeout 2400 s) |
 | `uuid-pack` | uuid pack/unpack, compare, copy, clear, is_null | unpack∘pack is the identity; compare orders like the bytes; copy, clear, is_null | none | | 1 s |
 | `bio`, `bio-4k` | `src/bio.c` | Read, write and erase reach the HAL only inside the device with the absolute LBA (F-055); sizes and getters exact (F-157); invalid handles rejected; lookup by UUID | one device, any LBAs, 512 / 4096 byte blocks | | 70 s / 110 s |
 | `bio-child` | `bio_allocate_parent` | A partition lies inside its disk and has its flags | a fixed disk | | see CI |
@@ -94,6 +94,8 @@ How to run and add proofs: `tests/cbmc/README.md`.
 | `ih-load` | `boot_image_load_and_hash` | Hashes exactly what was read, chunk by chunk; OK means every chunk read and hashed | 2 parts of up to 3 chunks | | 270 s / 640 s |
 | `ih-copy` | `boot_image_copy_and_hash` | Copies inside source and destination (F-088); hashes the copy | one part up to 512 bytes, buffers up to 256 | | 5 s |
 | `ih-payload` | `boot_image_verify_payload` | OK only for a known hash kind and a matching digest of its length | any header | | 5 s |
+| `boot-linux` | `boot_driver_linux_prepare` | The kernel, ramdisk and dtb addresses are their u64 load address entries (F-168); libfdt only on the dtb part after the header check, with the tree inside the part; the patched tree is cleaned; initrd cells not truncated | 3 parts and entries at fixed offsets (`stubs/boot_driver.h`), any ids, sizes and config; libfdt as a contract | | 480-570 s / 550-700 s (timeout 1800 s) |
+| `boot-atf` | `boot_driver_atf_prepare` (aarch64 only) | The ATF, BL33, BL32, ramdisk and dtb addresses are their u64 load address entries and the image sizes their part sizes, under 4 GiB (F-168); OP-TEE arch read only if it holds a u32; libfdt as in `boot-linux` | 4 parts, an OP-TEE arch entry; 64 bit only (`words`) | | 1250-1450 s (timeout 2400 s) |
 | `boot` | `src/boot/boot.c` | prepare, late_boot and jump only for the header authenticated, checked, loaded and verified in this boot_load | two boots, any sources; image helpers abstracted (`ih-*`) | | 9 s |
 | `cm-gate` | `pb_command_parse` | A command that needs authentication does nothing unauthenticated unless the SLC is a valid unlocked state (fails closed, D-023) | any command bytes and slc; every external call fails | | 1 s |
 | `cm-*` (14 proofs, one per command) | the command handlers in `cm_main.c` | Authenticated, any command bytes, host data and results of the called modules: no undefined behaviour, every transport read and write inside a valid buffer | the called modules as contracts (`stubs/cm_env.c`: bio with 512 byte blocks, up to 17 keys, ramlog), everything else any value | | 4-50 s |
@@ -117,8 +119,7 @@ What the proofs assume rather than prove. Each stub states its contract in its f
 |---|---|---|
 | String functions in proofs other than libc | Replaced by models | C standard semantics |
 | Mbed TLS, CAAM and other crypto drivers | Out of scope | `stubs/crypto.c`: any result, a digest of the asked length; the dispatch is the `crypto` proof |
-| littlefs, libfdt | Vendored, large | littlefs: not used before an image is verified; libfdt: only on the signed device tree |
-| `src/boot/linux.c`, `src/boot/atf.c` | Run on the verified image only (device tree patching through libfdt) | They run after `boot_image_verify_parts`, which checks every part's load address (`ih-verify-parts`) |
+| littlefs, libfdt | Vendored, large | littlefs: not used before an image is verified; libfdt: only on the signed device tree, inside its part (`boot-linux`, `boot-atf`) |
 | USB, MMC, UART hardware, SoC code | Hardware | The transport reads into and writes from the buffers it is given (`cm-handlers`) |
 
 ## Plan
@@ -133,8 +134,8 @@ From the approved plan (2026-11-02), ordered by attacker reachability:
   F-157, F-158, F-162, F-163; confirmed F-055, F-065, F-006). All of them are fixed (D-024,
   D-025); F-065 has hardening left that is not a parser bug.
 - **Phase 3:** done: `boot.c`, the auth gate, one proof per command handler, crypto dispatch
-  (confirmed F-070, F-074; found F-159, F-161, F-164..F-166). `atf.c`, `linux.c` and libfdt are
-  in the trust boundary (signed input only).
+  (confirmed F-070, F-074; found F-159, F-161, F-164..F-166). The boot drivers `linux.c` and
+  `atf.c` (found F-168); libfdt is in the trust boundary (signed input only).
 - **Phase 4:** host-side parsing in `tools/punchboot`, sequence properties, harnesses reused as
   fuzz targets.
 - Not yet done from Phase 0's surroundings: a CI gate that a PR touching a proven file also

@@ -237,10 +237,12 @@ meaning, so this is not a D-008 break; the wire format is unchanged.
 
 `bpak_valid_header` rejects a part whose size + pad wraps, or whose offset doesn't fit an `off_t`.
 The bpak getters stop at the first empty slot, as `bpak_valid_header` does. A part's pb-load-addr
-must be a u64 and the part must fit in the address space above it.
+must be a u64 and the part must fit in the address space above it, also where the Linux and
+ATF drivers read it, and their device tree must fit its part (`fdt_totalsize`, F-168).
 Why: these headers need the signing key, but the code that reads them read past the metadata
 (F-148), mis-sized parts (F-149) and let CHECK_OVERLAP wrap, so a part could load over the
 firmware (F-065). No tool produces such a header (bpak keeps entries packed, writes the load
 address as a u64, and real parts are far below 2^63 bytes), so every image a release accepted is
-still accepted (D-008). A 32-bit device still accepts a bpak with parts over 4 GiB in command
+still accepted (D-008; dtc writes `totalsize` as the size of the blob and bpak only pads after
+it). A 32-bit device still accepts a bpak with parts over 4 GiB in command
 mode; only booting one is refused.
