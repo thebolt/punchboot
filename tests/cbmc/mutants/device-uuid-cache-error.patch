@@ -1,0 +1,12 @@
+# proof: device-uuid
+# A failed UUID generation leaves its partial result cached
+--- a/src/device_uuid.c
++++ b/src/device_uuid.c
+@@ -24,7 +24,6 @@
+                             device_uu);
+ 
+         if (rc != 0) {
+-            uuid_clear(device_uu);
+             return rc;
+         }
+     }

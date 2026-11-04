@@ -1,0 +1,14 @@
+# proof: device-uuid
+# A failed platform read is ignored
+--- a/src/device_uuid.c
++++ b/src/device_uuid.c
+@@ -15,9 +15,6 @@
+     if (uuid_is_null(device_uu)) {
+         rc = plat_get_unique_id(plat_unique, &plat_unique_len);
+ 
+-        if (rc != PB_OK)
+-            return rc;
+-
+         rc = uuid_gen_uuid3((const unsigned char *)platform_ns_uuid,
+                             (const char *)plat_unique,
+                             plat_unique_len,
