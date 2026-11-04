@@ -78,6 +78,20 @@ static void test_expires_across_tick_rollover(void **state)
     assert_true(pb_timeout_has_expired(&to));
 }
 
+static void test_expires_when_the_tick_wrapped_between_polls(void **state)
+{
+    struct pb_timeout to;
+    (void)state;
+
+    /* Ends before the wrap, but the next poll comes after it */
+    fake_us_tick = 0xfffff000;
+    assert_int_equal(pb_timeout_init_us(&to, 0x100), PB_OK);
+    assert_false(to.rollover);
+
+    fake_us_tick = 0x10;
+    assert_true(pb_timeout_has_expired(&to));
+}
+
 static void test_delay_us_waits_for_the_tick(void **state)
 {
     (void)state;
@@ -116,6 +130,7 @@ int main(void)
         DELAY_TEST(test_invalid_timeouts),
         DELAY_TEST(test_expires),
         DELAY_TEST(test_expires_across_tick_rollover),
+        DELAY_TEST(test_expires_when_the_tick_wrapped_between_polls),
         DELAY_TEST(test_delay_us_waits_for_the_tick),
         DELAY_TEST(test_delay_ms),
         DELAY_TEST(test_zero_delay_returns),

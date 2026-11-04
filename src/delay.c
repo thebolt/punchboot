@@ -19,13 +19,9 @@ int pb_timeout_init_us(struct pb_timeout *timeout, uint32_t timeout_us)
 
     memset(timeout, 0, sizeof(*timeout));
     timeout->ts_start = plat_get_us_tick();
-
-    if ((0xffffffff - timeout->ts_start) <= timeout_us) {
-        timeout->rollover = true;
-        timeout->ts_end = timeout_us - (0xffffffff - timeout->ts_start);
-    } else {
-        timeout->ts_end = timeout->ts_start + timeout_us;
-    }
+    /* The tick wraps at 2^32, so does ts_end */
+    timeout->ts_end = timeout->ts_start + timeout_us;
+    timeout->rollover = (timeout->ts_end < timeout->ts_start);
 
     return PB_OK;
 }
@@ -34,17 +30,9 @@ bool pb_timeout_has_expired(struct pb_timeout *timeout)
 {
     uint32_t ts = plat_get_us_tick();
 
-    if (timeout->rollover) {
-        if ((ts >= timeout->ts_end) && (ts < timeout->ts_start))
-            return true;
-        else
-            return false;
-    } else {
-        if (ts >= timeout->ts_end)
-            return true;
-        else
-            return false;
-    }
+    /* Elapsed time modulo 2^32: right also when the tick wrapped between two
+     * polls, as long as they are less than 2^32 us apart */
+    return (uint32_t)(ts - timeout->ts_start) >= (uint32_t)(timeout->ts_end - timeout->ts_start);
 }
 
 void pb_delay_us(unsigned int us)
