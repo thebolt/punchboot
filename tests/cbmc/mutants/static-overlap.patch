@@ -1,0 +1,13 @@
+# proof: static-ptbl
+# An entry may start before the end of the previous one (F-177).
+--- a/src/drivers/partition/static.c
++++ b/src/drivers/partition/static.c
+@@ -18,8 +18,6 @@
+     for (; entry->uu != NULL; entry++) {
+         if (entry->first_lba) {
+             /* In order: an earlier start would overlap the previous one */
+-            if (entry->first_lba < next_start_lba)
+-                return -PB_ERR_PARAM;
+             next_start_lba = entry->first_lba;
+         }
+ 

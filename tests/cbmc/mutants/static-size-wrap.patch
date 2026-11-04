@@ -1,0 +1,14 @@
+# proof: static-ptbl
+# The last LBA is truncated to 32 bits (F-177).
+# words: 64 (a 32 bit size_t holds at most 2^23 blocks of 512 bytes)
+--- a/src/drivers/partition/static.c
++++ b/src/drivers/partition/static.c
+@@ -32,8 +32,6 @@
+         if (n_blocks == 0)
+             return -PB_ERR_PARAM;
+         uint64_t last = (uint64_t)next_start_lba + n_blocks - 1;
+-        if (last > UINT32_MAX)
+-            return -PB_ERR_PARAM;
+ 
+         lba_t last_lba = (lba_t)last;
+         bio_dev_t new_dev = bio_allocate_parent(

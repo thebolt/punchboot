@@ -1,0 +1,13 @@
+# proof: boot-armv7m
+# The image region may wrap the address space (F-178).
+--- a/src/boot/armv7m_baremetal.c
++++ b/src/boot/armv7m_baremetal.c
+@@ -20,7 +20,7 @@
+     cfg = cfg_in;
+ 
+     if (cfg->image_base_address == 0 || cfg->image_size < sizeof(struct bpak_header) ||
+-        cfg->image_size > UINTPTR_MAX - cfg->image_base_address || cfg->boot_partition_id == 0)
++        cfg->boot_partition_id == 0)
+         return -PB_ERR_PARAM;
+ 
+     return PB_OK;
