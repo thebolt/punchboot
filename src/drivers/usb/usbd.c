@@ -211,7 +211,8 @@ static int usbd_enumerate(struct usb_setup_packet *setup)
     } break;
     case USB_GET_STATUS: {
         LOG_DBG("Get status");
-        rc = ep0_tx(&device_status, sizeof(device_status));
+        length = MIN(setup->wLength, (uint16_t)sizeof(device_status));
+        rc = ep0_tx(&device_status, length);
     } break;
     case USB_GET_VENDOR: {
         LOG_DBG("Get vendor specific descriptor");
