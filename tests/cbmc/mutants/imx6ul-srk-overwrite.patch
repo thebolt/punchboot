@@ -1,0 +1,13 @@
+# proof: fusebox-imx6ul
+# SRK fusing does not check an already fused SRK.
+--- a/src/plat/imx6ul/fusebox.c
++++ b/src/plat/imx6ul/fusebox.c
+@@ -31,7 +31,7 @@
+             return rc;
+ 
+         /* Check if we're trying to change an already fused SRK */
+-        if (val != 0 && val != fuses->srk[n]) {
++        if (0) {
+             LOG_ERR(
+                 "Trying to change already fused srk[%u] from 0x%x to 0x%x", n, val, fuses->srk[n]);
+             return -PB_ERR_MEM;

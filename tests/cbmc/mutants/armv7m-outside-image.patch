@@ -3,7 +3,7 @@
 --- a/src/boot/armv7m_baremetal.c
 +++ b/src/boot/armv7m_baremetal.c
 @@ -43,7 +43,7 @@
-                                                                p->size + p->pad_bytes;
+                                                              : p->size + p->pad_bytes;
              uint64_t data_size = cfg->image_size - sizeof(struct bpak_header);
  
 -            if (offset > data_size || size > data_size - offset) {

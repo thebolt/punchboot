@@ -1,0 +1,13 @@
+# proof: fusebox-imx8x
+# SRK fusing ORs new bits into an already fused SRK (F-179).
+--- a/src/plat/imx8x/fusebox.c
++++ b/src/plat/imx8x/fusebox.c
+@@ -83,7 +83,7 @@
+         if (rc != PB_OK)
+             return rc;
+ 
+-        if (val != 0 && val != fuses->srk[n]) {
++        if (0) {
+             LOG_ERR(
+                 "Trying to change already fused SRK%u from 0x%x to 0x%x", n, val, fuses->srk[n]);
+             return -PB_ERR_MEM;

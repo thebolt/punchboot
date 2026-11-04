@@ -1,0 +1,14 @@
+# proof: fusebox-imx8x
+# A failed SRK read is not checked (F-179).
+--- a/src/plat/imx8x/fusebox.c
++++ b/src/plat/imx8x/fusebox.c
+@@ -105,8 +105,7 @@
+     uint32_t val;
+ 
+     for (unsigned int n = 0; n < 16; n++) {
+-        if (imx8x_fuse_read(730 + n, &val) != PB_OK)
+-            return false;
++        (void)imx8x_fuse_read(730 + n, &val);
+ 
+         if (val != 0)
+             return true;
