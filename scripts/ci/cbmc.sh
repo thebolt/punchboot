@@ -57,6 +57,17 @@ run_proof() {
 }
 export -f run_proof
 
+# The word sizes to run a proof at: all of $WORDS, or for code that only
+# builds for one of them, those listed in the proof's 'words' file
+proof_words() {
+    local file="tests/cbmc/proofs/$1/words" word
+    for word in $WORDS; do
+        if [ ! -f "$file" ] || grep -qw "$word" "$file"; then
+            echo "$word"
+        fi
+    done
+}
+
 if [ "$MODE" = proofs ]; then
     mkdir -p "$BUILD_DIR"
     BUILD="$(cd "$BUILD_DIR" && pwd)"
@@ -73,7 +84,7 @@ if [ "$MODE" = proofs ]; then
 
     echo "=== Running proofs"
     for proof in $PROOFS; do
-        for word in $WORDS; do
+        for word in $(proof_words "$proof"); do
             echo "$proof $word"
         done
     done | xargs -P "$JOBS" -n 2 bash -c 'run_proof "$0" "$1" "$2" "$3"' "$ROOT" "$BUILD"
@@ -107,7 +118,12 @@ for mutant in $MUTANTS; do
     patch -s -d "$scratch" -p1 < "$patch_file"
     mkdir -p "$scratch/build"
 
-    for word in $WORDS; do
+    # A bug that only exists at some word sizes says so: "# words: 64 (why)"
+    mutant_words="$(sed -n 's/^# words: *\([0-9 ]*\).*/\1/p' "$patch_file")"
+    for word in $(proof_words "$proof"); do
+        if [ -n "$mutant_words" ] && ! echo "$mutant_words" | grep -qw "$word"; then
+            continue
+        fi
         # Only a new counterexample counts, not a build error, a timeout or a
         # known failure (expected_failures.txt)
         if ! run_proof "$scratch" "$scratch/build" "$proof" "$word" > /dev/null &&

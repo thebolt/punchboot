@@ -7,8 +7,8 @@
  *
  * CBMC models of the libc string functions, linked into every proof except
  * the libc proofs (which verify the real src/lib/libc implementations):
- * memcpy, memmove and memset in one step each, memcmp, strlen and strncpy as
- * plain loops.
+ * memcpy, memmove and memset in one step each, memcmp, strlen, strcmp and
+ * strncpy as plain loops.
  *
  * They assert the C standard preconditions (the buffers are valid for n bytes,
  * memcpy does not overlap) and then have the standard effect, using CBMC's
@@ -105,6 +105,17 @@ size_t strlen(const char *s)
     while (s[n] != '\0')
         n++;
     return n;
+}
+
+int strcmp(const char *a, const char *b)
+{
+    size_t i = 0;
+
+    /* C11 7.24.4.2: compare as unsigned char up to the first difference or
+     * the null character */
+    while (a[i] != '\0' && a[i] == b[i])
+        i++;
+    return (unsigned char)a[i] - (unsigned char)b[i];
 }
 
 char *strncpy(char *dst, const char *src, size_t n)

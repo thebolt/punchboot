@@ -48,8 +48,12 @@ make -C tests/cbmc/proofs/wire WORD=32
 3. Check that the proof can fail: add a mutant, `tests/cbmc/mutants/<name>-<what>.patch`, whose
    first line is `# proof: <name>`, then a description, then a `diff -u` against the tree with
    `a/` and `b/` prefixes. `scripts/pbdev cbmc --mutants <mutant>` must report it as KILLED.
+   A bug that only exists at some word sizes adds `# words: 64 (why)` after the description.
 
-4. Run both word sizes and add the proof to the status table in `doc/dev/verification.md`.
+4. Run both word sizes and add the proof to the status table in `doc/dev/verification.md`. Code
+   that only builds for one word size (`atf.c`: aarch64) lists it in a `words` file in the proof
+   directory; the runner skips the others. Each cbmc run has 600 s (`TIMEOUT`); a proof that
+   needs more sets `TIMEOUT ?= <s>` in its Makefile (`boot-atf`, `boot-linux`, `uuid-roundtrip`).
 
 CBMC (6.6) limitations worth knowing:
 

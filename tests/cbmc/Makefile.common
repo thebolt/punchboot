@@ -30,6 +30,8 @@
 #              e.g. assert-false: calling any of them fails the proof
 #   MODELS     Models linked into the proof (default: stubs/string_models.c, log.c).
 #              The libc proofs set it empty to verify src/lib/libc itself.
+#   TIMEOUT    Seconds per cbmc run (default 600). A slow proof sets a longer
+#              one with ?=, so the environment still overrides it.
 #
 # Environment / command line:
 #   WORD=32|64  ILP32 (aarch32, i.MX6UL/RT) or LP64 (aarch64, i.MX8) (default 32)

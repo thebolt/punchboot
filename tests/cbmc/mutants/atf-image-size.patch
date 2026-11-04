@@ -1,0 +1,13 @@
+# proof: boot-atf
+# A BL33 part over 4 GiB is truncated (F-168).
+--- a/src/boot/atf.c
++++ b/src/boot/atf.c
+@@ -152,7 +152,7 @@
+     }
+ 
+     /* ATF takes a 32 bit image size */
+-    if (bpak_part_size(ph) > UINT32_MAX) {
++    if (0) {
+         LOG_ERR("BL33 is larger than 4 GiB");
+         return -PB_ERR_BAD_META;
+     }

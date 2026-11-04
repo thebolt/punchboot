@@ -1,0 +1,13 @@
+# proof: boot-atf
+# libfdt works on a tree larger than its part (F-168).
+--- a/src/boot/atf.c
++++ b/src/boot/atf.c
+@@ -248,7 +248,7 @@
+ 
+         /* libfdt reads and patches the tree up to its total size, which
+          * must be inside the part that was loaded and verified */
+-        if (fdt_totalsize(fdt) > dtb_length) {
++        if (0) {
+             LOG_ERR("Device tree is larger than its part");
+             return -PB_ERR;
+         }

@@ -1,0 +1,14 @@
+# proof: boot-linux
+# The initrd addresses are always one 32-bit cell (F-168).
+# words: 64 (a 32 bit ramdisk cannot end above 4 GiB)
+--- a/src/boot/linux.c
++++ b/src/boot/linux.c
+@@ -226,7 +226,7 @@
+              * (Linux reads either) */
+             uint64_t ramdisk_end = (uint64_t)ramdisk_addr + ramdisk_length;
+ 
+-            if (ramdisk_end <= UINT32_MAX)
++            if (1)
+                 rc = fdt_setprop_u32(
+                     (void *)fdt, offset, "linux,initrd-start", (uint32_t)ramdisk_addr);
+             else
