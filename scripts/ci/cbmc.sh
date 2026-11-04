@@ -115,7 +115,12 @@ for mutant in $MUTANTS; do
     cp -r include src scripts configs tools "$scratch/"
     mkdir -p "$scratch/tests"
     cp -r tests/cbmc "$scratch/tests/"
-    patch -s -d "$scratch" -p1 < "$patch_file"
+    if ! patch -s -d "$scratch" -p1 < "$patch_file"; then
+        echo "ERROR $mutant: the patch does not apply (regenerate it against the source)"
+        rm -rf "$scratch"
+        failed=1
+        continue
+    fi
     mkdir -p "$scratch/build"
 
     # A bug that only exists at some word sizes says so: "# words: 64 (why)"
