@@ -69,6 +69,21 @@ def test_boot_partition(
     assert boot_partition(device, part) == name
 
 
+@pytest.mark.parametrize("size", [100, 4096 + 64 * 1024 - 1], ids=["no-header", "short-part"])
+def test_boot_truncated_image_is_refused(
+    device: Device, tmp_path: pathlib.Path, size: int
+) -> None:
+    """The host sends the parts from the file: it refuses one they are not in."""
+    img = make_bpak(tmp_path / "img.bpak", os.urandom(64 * 1024))
+    img.write_bytes(img.read_bytes()[:size])
+
+    with device.session() as s, pytest.raises(punchboot.GenericError):
+        s.boot_bpak(img, NULL_UUID)
+
+    assert device.running
+    assert device.boot_status is None
+
+
 def test_write_image_larger_than_partition_fails(device: Device, tmp_path: pathlib.Path) -> None:
     small = make_bpak(tmp_path / "small.bpak", os.urandom(128 * 1024))
     large = make_bpak(tmp_path / "large.bpak", os.urandom(1024 * 1024))
