@@ -74,6 +74,7 @@ How to run and add proofs: `tests/cbmc/README.md`.
 | `rot-imx6ul` | i.MX6UL `rot_helpers.c`, `slc_helpers.c` | Revoked key reads as revoked; revoke burns only the key's bit; LOCKED exactly when HAB reports secure boot; lock fuse burnt only from an unlocked state | param1 < 4 | | 1 s / 1 s |
 | `rot-imx6ul-seq` | i.MX6UL `rot_helpers.c`, `slc_helpers.c` | Over any sequence of revokes, key status reads and locks on the same fuses: a revoked key never reads OK again, the lock fuse stays burnt | 3 steps, 4 SRK slots, any fuses at the start | | 1 s / 1 s |
 | `rot-imx8x` | i.MX8X `rot_helpers.c`, `slc_helpers.c` | REVOKED exactly when the key's SECO bit is set; LOCKED exactly when SECO reports OEM closed; fail closed when SECO can't be asked; forward only with the SRK fused | param1 < 4 | | 1 s / 1 s |
+| `fusebox-imx6ul`, `fusebox-imx8x` | `src/plat/{imx6ul,imx8x}/fusebox.c` (SLC_SET_CONFIGURATION) | A NULL or empty SRK table burns nothing; an SRK fused to other values is never changed; OK means the SRK is fused; `is_srk_fused` true only if a word is set (F-179) | any fuses, any read or write failure; i.MX8X: only SRK words, only after init | | 2 s / 16-18 s |
 | `slc-imxrt` | i.MX RT `slc_helpers.c`, `rot_helpers.c` | LOCKED exactly when SEC_CONFIG is set; NOT_CONFIGURED means no SRK bits; no revocation support | none | | 1 s / 1 s |
 | `libc-*` (18 proofs) | Every function in `src/lib/libc/` string.h: `memcpy` (`string.c` and the unused `memcpy.c`), `memmove`, `memset`, `memcmp`, `memchr`, `strlen`, `strnlen`, `strcmp`, `strncmp` (`strcmp.c` and the unused `strncmp.c`), `strchr`, `strrchr`, `strcpy`, `strncpy`, `strlcpy`, `strspn`, `strcspn` | The definition in C11 7.24 (POSIX for `strnlen`, `strlcpy`), clause cited in each harness: results, what is written and what is left alone, no access outside what the standard lets the function touch | buffers ≤ 6 bytes | | ≤ 3 s each, `memmove` 45 s |
 | `libc-strtoul`, `libc-strtoul-overflow` | `strtoul` | C11 7.22.1.4 written out as a reference parser (white-space, sign, 0x, base 0, subject sequence, negation, `ULONG_MAX`), value and `endptr` compared for any string; exact value or `ULONG_MAX` for 7-digit numbers | strings ≤ 6 bytes; bases 0, 2, 8, 10, 16, 36 | | 50 s; 180 s |
@@ -154,9 +155,11 @@ From the approved plan (2026-11-02), ordered by attacker reachability:
   `device_uuid.c`, `console.c`, `main.c` and `self_test.c` (`main`).
 - **Drivers:** the USB device core and class (`usbd`, found F-175, F-176), which handle setup
   packets from any host. The static partition table (`static-ptbl`, F-177) and the Cortex-M
-  boot driver (`boot-armv7m`, F-178). Not proven, by reading: `hab.c` (prints the HAB ROM's
-  event log, trusted ROM output into a 128 byte buffer the ROM is told about), the fuseboxes
-  (fixed board fuse programming), `test_fuse_bio.c` (host test fuses). The UDC, MMC, UART, fuse and crypto drivers program hardware and are not
+  boot driver (`boot-armv7m`, F-178). SRK fusing (`fusebox-imx6ul`, `fusebox-imx8x`, F-179). Not proven: `hab.c` calls the HAB
+  ROM through fixed addresses, which CBMC cannot follow (like the ROM log decoder; it passes
+  the ROM the size of its 128 byte buffer); `test_fuse_bio.c` is the host simulator's fuse
+  emulation, not firmware; `mmc_core.c` and the other hardware drivers talk to on-board
+  devices (trust boundary). The UDC, MMC, UART, fuse and crypto drivers program hardware and are not
   proven. Postponed: the i.MX6UL ROM log decoder (`rom_log.c`, jiffy's `dump-rom-log`): with the
   firmware `snprintf` even one event line is too big for CBMC 6.6 (over 16k objects, then
   timeouts); by reading, every line is under 72 of the 128 bytes it is given.
