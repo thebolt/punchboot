@@ -1,0 +1,12 @@
+# proof: host-api
+# The boot status is not terminated (F-169).
+--- a/tools/punchboot/api_boot.c
++++ b/tools/punchboot/api_boot.c
+@@ -282,7 +282,6 @@
+             n = sizeof(boot_status->status);
+ 
+         memcpy(status_message, boot_status->status, n);
+-        status_message[n] = '\0';
+     }
+ 
+     memcpy(uuid, boot_status->uuid, 16);

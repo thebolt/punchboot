@@ -1,0 +1,13 @@
+# proof: host-part-table
+# The partition table allocation is not checked (F-169).
+--- a/tools/punchboot/api_partition.c
++++ b/tools/punchboot/api_partition.c
+@@ -62,8 +62,6 @@
+ 
+     struct pb_result_part_table_entry *tbl = malloc(bytes_to_read + 1);
+ 
+-    if (!tbl)
+-        return -PB_RESULT_NO_MEMORY;
+ 
+     if (!tbl_read_result.no_of_entries) {
+         goto skip_tbl_read;

@@ -1,0 +1,12 @@
+# proof: host-part-table
+# The partition descriptions are not terminated (F-169).
+--- a/tools/punchboot/api_partition.c
++++ b/tools/punchboot/api_partition.c
+@@ -99,7 +99,6 @@
+     for (int i = 0; i < tbl_read_result.no_of_entries; i++) {
+         memcpy(out[i].uuid, tbl[i].uuid, 16);
+         strncpy(out[i].description, tbl[i].description, 36);
+-        out[i].description[36] = '\0';
+         out[i].first_block = tbl[i].first_block;
+         out[i].last_block = tbl[i].last_block;
+         out[i].flags = tbl[i].flags;

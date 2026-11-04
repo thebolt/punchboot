@@ -7,7 +7,7 @@
  *
  * CBMC models of the libc string functions, linked into every proof except
  * the libc proofs (which verify the real src/lib/libc implementations):
- * memcpy, memmove and memset in one step each, memcmp, strlen, strcmp and
+ * memcpy, memmove and memset in one step each, memcmp, strlen, strnlen, strcmp and
  * strncpy as plain loops.
  *
  * They assert the C standard preconditions (the buffers are valid for n bytes,
@@ -103,6 +103,16 @@ size_t strlen(const char *s)
     /* Each read is checked by the pointer checks; a string that is not
      * terminated inside its object fails them */
     while (s[n] != '\0')
+        n++;
+    return n;
+}
+
+size_t strnlen(const char *s, size_t maxlen)
+{
+    size_t n = 0;
+
+    /* POSIX: the length, but at most maxlen; reads no more than maxlen */
+    while (n < maxlen && s[n] != '\0')
         n++;
     return n;
 }

@@ -112,7 +112,7 @@ for mutant in $MUTANTS; do
     fi
 
     scratch="$(mktemp -d)"
-    cp -r include src scripts configs "$scratch/"
+    cp -r include src scripts configs tools "$scratch/"
     mkdir -p "$scratch/tests"
     cp -r tests/cbmc "$scratch/tests/"
     patch -s -d "$scratch" -p1 < "$patch_file"

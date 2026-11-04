@@ -55,6 +55,11 @@ make -C tests/cbmc/proofs/wire WORD=32
    directory; the runner skips the others. Each cbmc run has 600 s (`TIMEOUT`); a proof that
    needs more sets `TIMEOUT ?= <s>` in its Makefile (`boot-atf`, `boot-linux`, `uuid-roundtrip`).
 
+Host tool proofs (`host-*`, `tools/punchboot`) set `HOST = 1`: the firmware libc headers plus the
+few host functions the tools use (`tests/cbmc/host/`), the host's signed `char`, and a `malloc`
+that can return NULL. `stubs/host_device.h` is the device: every read gives any bytes or an
+error; `dev_answer` lets a harness bound specific answers, which it then lists as assumptions.
+
 CBMC (6.6) limitations worth knowing:
 
 - It does not promote variadic arguments narrower than `int` (`uint8_t`, `uint16_t`), so

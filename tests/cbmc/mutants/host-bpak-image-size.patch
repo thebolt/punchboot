@@ -1,0 +1,13 @@
+# proof: host-boot-bpak
+# The parts of a bpak image are sent without checking that they are in it (F-169).
+--- a/tools/punchboot/api_boot.c
++++ b/tools/punchboot/api_boot.c
+@@ -240,7 +240,7 @@
+             uint64_t part_size = (p->flags & BPAK_FLAG_TRANSPORT) ? p->transport_size
+                                                                   : p->size + p->pad_bytes;
+ 
+-            if (offset > size || part_size > size - offset)
++            if (0)
+                 return -PB_RESULT_INVALID_ARGUMENT;
+         }
+     }

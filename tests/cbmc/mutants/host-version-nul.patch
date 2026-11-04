@@ -1,0 +1,13 @@
+# proof: host-api
+# The version string is read with strlen, past a response without a null character (F-169).
+--- a/tools/punchboot/api_misc.c
++++ b/tools/punchboot/api_misc.c
+@@ -30,7 +30,7 @@
+     p = (char *)result.response;
+ 
+     /* The device may not terminate the string */
+-    size_t len = strnlen(p, sizeof(result.response));
++    size_t len = strlen(p);
+ 
+     if (len == sizeof(result.response))
+         return -PB_RESULT_ERROR;
