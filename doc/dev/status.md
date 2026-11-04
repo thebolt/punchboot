@@ -51,13 +51,13 @@ the host half of 4 are done (`compatibility.md`, Guards).
   (D-020, temporary). Bugs found on the way: F-143, F-144, F-147 (open). Left: de-duplication
   F-145 (porting API part on hold), ATF F-146, boards F-033/F-051.
 
-**CBMC (branch `cbmc`, D-022):** 89 proofs in `tests/cbmc` at 32 and 64 bit (`verification.md`):
+**CBMC (branch `cbmc`, D-022):** 91 proofs in `tests/cbmc` at 32 and 64 bit (`verification.md`):
 the pre-auth parsers (bpak, der, gpt, signature), the root of trust and SLC (also over a
 sequence of operations on i.MX6UL), every libc string function against C11, bio, ab_state,
 ramlog, tzc380, image verification, the boot flow, the command mode gate and handlers, crypto
 dispatch, the Linux and ATF boot drivers (`boot-atf` 64 bit only), timeouts, timestamps, the
 device UUID, the console's RAM log replay, and the host API against a malicious device (`host-*`,
-D-026). They found F-148..F-169, F-172, F-173, F-175, F-176; all of them and F-001, F-006, F-055, F-066, F-070,
+D-026). They found F-148..F-169, F-172, F-173, F-175..F-178; all of them and F-001, F-006, F-055, F-066, F-070,
 F-074, F-075, F-089 are fixed, each a `bugfix:` commit with its proof as the test (D-023
 fail-closed gate, D-024 erase and GPT, D-025 malformed signed headers). Open: F-065 hardening
 that is not a parser bug (needs decisions), F-170 (USB short reads, needs hardware), F-174

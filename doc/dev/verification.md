@@ -20,7 +20,7 @@ How to run and add proofs: `tests/cbmc/README.md`.
   `tests/cbmc/stubs/string_models.c`. They assert the C preconditions (valid for n bytes, no
   overlap for memcpy). CBMC's own models are not used: CBMC preprocesses them with the host libc
   headers, which do not exist for 32-bit builds. The real `src/lib/libc` is verified by its own
-  proofs (planned, Phase 1).
+  proofs (`libc-*`).
 - Default checks: bounds, pointer, pointer-primitive, signed and unsigned overflow, conversion,
   undefined shift, pointer overflow, division by zero, and unwinding assertions (a too-low loop
   bound fails the proof). A proof may turn a check off with `CHECK_FLAGS_OFF` and a comment why.
@@ -95,6 +95,7 @@ How to run and add proofs: `tests/cbmc/README.md`.
 | `console` | `src/console.c` | The early RAM log replay reads only inside the log and writes out exactly the bytes still in it that were not muted, in order, each once; after `console_init` the UART gets output exactly when not muted | ≤ 5 steps of ≤ 3 bytes or a (un)mute, a RAM log of ≤ 8 bytes at any position | | 100-145 s / 110-155 s |
 | `main` | `src/main.c`, `src/self_test.c` | Nothing boots unless plat and board init succeeded; self tests between them and the boot; command mode then a reset after a returning boot; every self test once, in order, after a watchdog kick | a firmware build with self tests (jiffy), ≤ 2 tests | | 1 s / 1 s |
 | `usbd` | `src/drivers/usb/usbd.c`, `pb_dev_cls.c` string descriptors | For any setup packets (pre-auth), during enumeration and mid-transfer: every EP0 answer inside its descriptor and at most `wLength` (F-175); SET_CONFIGURATION gets the interface's endpoints; an interrupted transfer restarts as it was; the serial number from a written UUID (F-176); connected only once configured | the descriptor layout and lengths of `pb_dev_cls.c`, a HAL with every op (all three UDC drivers) | | 17 s / 17 s |
+| `static-ptbl` | `src/drivers/partition/static.c` (the i.MX RT NOR table) | NULL table and invalid parent refused; on OK one partition per entry in order, starting at `first_lba` or after the previous one, of exactly the entry's size, not overlapping (F-177) | ≤ 3 entries, any values; 512 byte blocks; `bio_allocate_parent` by its contract (`bio-child`) | | 3 s / 8 s |
 | `ih-auth` | `boot_image_auth_header` (pre-auth) | OK only when dsa_verify verified; the header's signature, digest length of its hash kind; the whole header hashed once with the signature zeroed; the key only if not revoked | any header | | 7 s |
 | `ih-verify-parts` | `boot_image_verify_parts` | OK means every region (stack, data, bss, code, no_init, any layout) was checked with the part's whole range, which does not wrap, and where the code found a region clear it is (F-065) | one part, its load address in the first metadata entry; `CHECK_OVERLAP` records its range and checks each call | | 10 s / 25 s |
 | `ih-verify-parts-read` | `part_load_addr` | For any metadata layout: OK means the pb-load-addr entry is a u64, the address is its value, and the part fits above it (F-065) | one part, 4 metadata entries | | 240 s / 260 s |
@@ -103,6 +104,7 @@ How to run and add proofs: `tests/cbmc/README.md`.
 | `ih-payload` | `boot_image_verify_payload` | OK only for a known hash kind and a matching digest of its length | any header | | 5 s |
 | `boot-linux` | `boot_driver_linux_prepare` | The kernel, ramdisk and dtb addresses are their u64 load address entries (F-168); libfdt only on the dtb part after the header check, with the tree inside the part; the patched tree is cleaned; initrd cells not truncated | 3 parts and entries at fixed offsets (`stubs/boot_driver.h`), any ids, sizes and config; libfdt as a contract | | 480-600 s / 550-1000 s (timeout 1800 s) |
 | `boot-atf` | `boot_driver_atf_prepare` (aarch64 only) | The ATF, BL33, BL32, ramdisk and dtb addresses are their u64 load address entries and the image sizes their part sizes, under 4 GiB (F-168); OP-TEE arch read only if it holds a u32; libfdt as in `boot-linux` | 4 parts, an OP-TEE arch entry; 64 bit only (`words`) | | 1250-1500 s (timeout 2400 s) |
+| `boot-armv7m` | `src/boot/armv7m_baremetal.c` (no board uses it) | init accepts exactly a usable config whose image region does not wrap; OK only with a boot part, which lies inside the image before its header; the entry point is that part's first byte, no truncation or wrap (F-178) | valid header, ≤ 3 parts, no metadata; 32 bit only (`words`) | | 4 s |
 | `boot` | `src/boot/boot.c` | prepare, late_boot and jump only for the header authenticated, checked, loaded and verified in this boot_load | two boots, any sources; image helpers abstracted (`ih-*`) | | 9 s |
 | `cm-gate` | `pb_command_parse` | A command that needs authentication does nothing unauthenticated unless the SLC is a valid unlocked state (fails closed, D-023) | any command bytes and slc; every external call fails | | 1 s |
 | `cm-*` (14 proofs, one per command) | the command handlers in `cm_main.c` | Authenticated, any command bytes, host data and results of the called modules: no undefined behaviour, every transport read and write inside a valid buffer | the called modules as contracts (`stubs/cm_env.c`: bio with 512 byte blocks, up to 17 keys, ramlog), everything else any value | | 4-50 s |
@@ -151,7 +153,10 @@ From the approved plan (2026-11-02), ordered by attacker reachability:
 - **The rest of `src/*.c`:** done: `delay.c` (found F-172), `timestamp.c` (F-173),
   `device_uuid.c`, `console.c`, `main.c` and `self_test.c` (`main`).
 - **Drivers:** the USB device core and class (`usbd`, found F-175, F-176), which handle setup
-  packets from any host. The UDC, MMC, UART, fuse and crypto drivers program hardware and are not
+  packets from any host. The static partition table (`static-ptbl`, F-177) and the Cortex-M
+  boot driver (`boot-armv7m`, F-178). Not proven, by reading: `hab.c` (prints the HAB ROM's
+  event log, trusted ROM output into a 128 byte buffer the ROM is told about), the fuseboxes
+  (fixed board fuse programming), `test_fuse_bio.c` (host test fuses). The UDC, MMC, UART, fuse and crypto drivers program hardware and are not
   proven. Postponed: the i.MX6UL ROM log decoder (`rom_log.c`, jiffy's `dump-rom-log`): with the
   firmware `snprintf` even one event line is too big for CBMC 6.6 (over 16k objects, then
   timeouts); by reading, every line is under 72 of the 128 bytes it is given.
