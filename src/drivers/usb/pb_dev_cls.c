@@ -125,7 +125,10 @@ static struct usb_string_descriptor *get_string_descriptor(uint8_t idx)
     if (idx == 1) {
         usb_string(&usb_str_desc, "Punchboot");
     } else if (idx == 2) {
-        device_uuid(device_uu);
+        /* Without a device UUID (a fuse or hash error) the serial number
+         * is all zeros, not the stack's contents */
+        if (device_uuid(device_uu) != PB_OK)
+            uuid_clear(device_uu);
         uuid_unparse(device_uu, device_uu_str);
         usb_string(&usb_str_desc, device_uu_str);
     } else {
