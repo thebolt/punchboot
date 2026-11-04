@@ -8,4 +8,6 @@ SOURCES = $(ROOT)/src/wire.c $(P)/error.c $(P)/api_partition.c $(P)/api_device.c
 # 36 character description
 UNWIND  = 5
 CBMC_EXTRA = --unwindset memcmp.0:17,strncpy.0:37,strncpy.1:37 --object-bits 10
+# 400-420 s alone, over 600 s next to another proof
+TIMEOUT ?= 1200
 include ../../Makefile.common

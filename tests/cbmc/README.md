@@ -53,7 +53,9 @@ make -C tests/cbmc/proofs/wire WORD=32
 4. Run both word sizes and add the proof to the status table in `doc/dev/verification.md`. Code
    that only builds for one word size (`atf.c`: aarch64) lists it in a `words` file in the proof
    directory; the runner skips the others. Each cbmc run has 600 s (`TIMEOUT`); a proof that
-   needs more sets `TIMEOUT ?= <s>` in its Makefile (`boot-atf`, `boot-linux`, `uuid-roundtrip`).
+   needs more sets `TIMEOUT ?= <s>` in its Makefile (`boot-atf`, `boot-linux`, `host-part-rw`,
+   `ih-load`, `uuid-roundtrip`). `boot-atf` and `boot-linux` need up to 4.5 GB each: on a machine
+   with 8 GB run them with `JOBS=1` and nothing else.
 
 Host tool proofs (`host-*`, `tools/punchboot`) set `HOST = 1`: the firmware libc headers plus the
 few host functions the tools use (`tests/cbmc/host/`), the host's signed `char`, and a `malloc`
