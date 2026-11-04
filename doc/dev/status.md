@@ -62,7 +62,8 @@ F-074, F-075, F-089 are fixed, each a `bugfix:` commit with its proof as the tes
 fail-closed gate, D-024 erase and GPT, D-025 malformed signed headers). Open: F-065 hardening
 that is not a parser bug (needs decisions), F-170 (USB short reads, needs hardware), F-174
 (authentication kept over a transport restart, a question for Jonas). All proofs pass, every
-mutant is caught; run by hand, not in CI. Host tests pass, also in the dev container.
+mutant is caught (full run 2026-11-04); run by hand, not in CI, the boot drivers alone
+(4.5 GB each). Host tests pass, also in the dev container.
 
 **Hard rule (D-008):** never break wire or bpak compatibility. See `compatibility.md`.
 
