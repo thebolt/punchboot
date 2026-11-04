@@ -205,7 +205,8 @@ Proofs live in `tests/cbmc`, run at both firmware word sizes (32 and 64 bit) aga
 libc headers, and are ordered by attacker reachability (`verification.md`). Results are stated as
 "no failed property up to bound N under the listed assumptions", never as unbounded proofs.
 Every harness has reachability goals, and every proof has a mutant it must find. The vendored
-libc and uuid are verified too. The CI job is not blocking until the proofs have been stable.
+libc and uuid are verified too. The proofs are run by hand, not in CI: they take hours
+(2026-11-04).
 Why: the unit and integration tests only check the inputs someone thought of. Most of the open
 security findings are bounds or wrap bugs in code that parses untrusted input, which is what
 bounded model checking finds. Note: D-022 and up may collide with other branches, renumber on

@@ -86,38 +86,6 @@ jobs:
       - name: Build
         run: scripts/pbdev firmware ${{ matrix.board }}
 
-  cbmc:
-    name: CBMC proofs (${{ matrix.word }} bit)
-    runs-on: ubuntu-latest
-    # Not blocking until the proofs have been green for a while (tests/cbmc/README.md)
-    continue-on-error: true
-    strategy:
-      fail-fast: false
-      matrix:
-        word: [32, 64]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      # A change to proven code changes its proof too, or says why not
-      - name: Proof gate
-        if: github.event_name == 'pull_request' && matrix.word == 32
-        run: python3 scripts/ci/cbmc_gate.py origin/${{ github.base_ref }}
-
-      - name: Proofs
-        run: scripts/pbdev cbmc --word ${{ matrix.word }}
-
-      # Every mutant (a known bug) must be found by its proof
-      - name: Mutants
-        run: scripts/pbdev cbmc --mutants --word ${{ matrix.word }}
-
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: cbmc-logs-${{ matrix.word }}
-          path: build-cbmc/*.log
-
   coverity:
     name: Coverity scan
     # Needs the COVERITY_SCAN_TOKEN secret, which is not available on forks

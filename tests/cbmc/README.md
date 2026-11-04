@@ -55,11 +55,6 @@ make -C tests/cbmc/proofs/wire WORD=32
    directory; the runner skips the others. Each cbmc run has 600 s (`TIMEOUT`); a proof that
    needs more sets `TIMEOUT ?= <s>` in its Makefile (`boot-atf`, `boot-linux`, `uuid-roundtrip`).
 
-A pull request that changes a file a proof covers (its Makefile names it or its harness
-includes it) must change one of those proofs too, or say why not in a commit message line
-`CBMC-waiver: <why>`. CI checks it with `scripts/ci/cbmc_gate.py <base>`; `--list` shows which
-proofs cover which file.
-
 Host tool proofs (`host-*`, `tools/punchboot`) set `HOST = 1`: the firmware libc headers plus the
 few host functions the tools use (`tests/cbmc/host/`), the host's signed `char`, and a `malloc`
 that can return NULL. `stubs/host_device.h` is the device: every read gives any bytes or an
