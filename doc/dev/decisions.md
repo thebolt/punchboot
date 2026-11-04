@@ -246,3 +246,16 @@ address as a u64, and real parts are far below 2^63 bytes), so every image a rel
 still accepted (D-008; dtc writes `totalsize` as the size of the blob and bpak only pads after
 it). A 32-bit device still accepts a bpak with parts over 4 GiB in command
 mode; only booting one is refused.
+
+## D-026: The host API does not trust the device's sizes (2026-11-04)
+
+The host refuses a device that reports 0 stream buffers or a chunk size of 0, a board status
+that leaves no room for a null character, and a version without one in the response; it
+terminates the strings it returns itself. `pb_api_boot_bpak_image` refuses a bpak file that does
+not hold its header and every part. Why: the host crashed, hung or read past its buffers on
+such answers (F-169). `compatibility.md` asks the host to handle a zero in every caps field:
+these two have been set (2 and `CM_BUF_SIZE`) by every firmware since they were added, and a
+zero never worked (it divided by zero or hung), so refusing it with an error loses nothing.
+The firmware sends board status text without a null character; the host now adds it, so a
+status as large as the caller's buffer is refused (the wrapper's buffer is 1 KiB, the board
+statuses are a line). `pb_api_boot_bpak` keeps its signature for C API users.

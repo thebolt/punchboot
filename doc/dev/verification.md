@@ -100,6 +100,10 @@ How to run and add proofs: `tests/cbmc/README.md`.
 | `cm-gate` | `pb_command_parse` | A command that needs authentication does nothing unauthenticated unless the SLC is a valid unlocked state (fails closed, D-023) | any command bytes and slc; every external call fails | | 1 s |
 | `cm-*` (14 proofs, one per command) | the command handlers in `cm_main.c` | Authenticated, any command bytes, host data and results of the called modules: no undefined behaviour, every transport read and write inside a valid buffer | the called modules as contracts (`stubs/cm_env.c`: bio with 512 byte blocks, up to 17 keys, ramlog), everything else any value | | 4-50 s |
 | `crypto` | `src/crypto.c` | hash calls only between hash_init and hash_final, to the provider that has the algorithm, with the caller's arguments; dsa_verify's result and verified are the provider's, NOT_SUPPORTED without one; tables never overflow | providers with any algorithm bits | | 1 s |
+| `host-api` | the host API calls with one exchange (`tools/punchboot/api_*.c`) | For any bytes a malicious device sends and any transport error: no undefined behaviour, only the caller's buffers; the version, boot and board status end inside the caller's buffer, board command and log read sizes fit it (F-169) | output buffers ≤ 512 bytes | | 158 s / 177 s |
+| `host-part-table` | `pb_api_partition_read_table` | At most the caller's entries, every description terminated, a failed malloc refused (F-169) | ≤ 3 entries | | 43 s / 42 s |
+| `host-part-rw` | `pb_api_partition_write`, `pb_api_partition_read` | No division by the device's buffer count, both terminate, a successful write sent the whole file (F-169) | chunk 0 or ≤ 8 KiB, ≤ 2 partitions of ≤ 3 chunks, file ≤ partition + 1 | | 344 s / 354 s |
+| `host-boot-bpak` | `pb_api_boot_bpak_image` | For any file of any size: nothing read outside it, the transfer terminates (F-169) | header + 8 bytes, ≤ 2 parts, 1 metadata entry | | 23 s / 30 s |
 
 Checks turned off: `crc` has no unsigned overflow check (`while (size--)` wraps on purpose). The
 libc and uuid proofs have no unsigned overflow and conversion checks: the code relies on size_t
@@ -121,6 +125,7 @@ What the proofs assume rather than prove. Each stub states its contract in its f
 | Mbed TLS, CAAM and other crypto drivers | Out of scope | `stubs/crypto.c`: any result, a digest of the asked length; the dispatch is the `crypto` proof |
 | littlefs, libfdt | Vendored, large | littlefs: not used before an image is verified; libfdt: only on the signed device tree, inside its part (`boot-linux`, `boot-atf`) |
 | USB, MMC, UART hardware, SoC code | Hardware | The transport reads into and writes from the buffers it is given (`cm-handlers`) |
+| Host transports (`usb.c`, `socket.c`), the Python wrapper | libusb, CPython | A read fills the whole buffer or fails (`stubs/host_device.h`); `usb.c` does not check the length yet (F-170) |
 
 ## Plan
 
@@ -136,8 +141,8 @@ From the approved plan (2026-11-02), ordered by attacker reachability:
 - **Phase 3:** done: `boot.c`, the auth gate, one proof per command handler, crypto dispatch
   (confirmed F-070, F-074; found F-159, F-161, F-164..F-166). The boot drivers `linux.c` and
   `atf.c` (found F-168); libfdt is in the trust boundary (signed input only).
-- **Phase 4:** host-side parsing in `tools/punchboot`, sequence properties, harnesses reused as
-  fuzz targets.
+- **Phase 4:** host-side parsing in `tools/punchboot` done (`host-*`, found F-169; host mode in
+  `Makefile.common`). Left: sequence properties, harnesses reused as fuzz targets.
 - Not yet done from Phase 0's surroundings: a CI gate that a PR touching a proven file also
   touches its proof, and cbmc-viewer reports.
 
