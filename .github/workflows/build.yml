@@ -97,6 +97,13 @@ jobs:
         word: [32, 64]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # A change to proven code changes its proof too, or says why not
+      - name: Proof gate
+        if: github.event_name == 'pull_request' && matrix.word == 32
+        run: python3 scripts/ci/cbmc_gate.py origin/${{ github.base_ref }}
 
       - name: Proofs
         run: scripts/pbdev cbmc --word ${{ matrix.word }}
