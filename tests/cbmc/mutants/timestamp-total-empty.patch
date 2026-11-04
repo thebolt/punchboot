@@ -1,0 +1,13 @@
+# proof: timestamp
+# ts_total without timestamps reads before the table
+--- a/src/timestamp.c
++++ b/src/timestamp.c
+@@ -43,8 +43,5 @@
+ 
+ unsigned int ts_total(void)
+ {
+-    if (ts_count == 0)
+-        return 0;
+-
+     return timestamps[ts_count - 1].ts - timestamps[0].ts;
+ }

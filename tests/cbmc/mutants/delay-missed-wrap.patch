@@ -1,0 +1,15 @@
+# proof: delay
+# The old expiry check: a timeout that ends before the tick wraps, polled after the wrap, does not expire
+--- a/src/delay.c
++++ b/src/delay.c
+@@ -32,7 +32,9 @@
+ 
+     /* Elapsed time modulo 2^32: right also when the tick wrapped between two
+      * polls, as long as they are less than 2^32 us apart */
+-    return (uint32_t)(ts - timeout->ts_start) >= (uint32_t)(timeout->ts_end - timeout->ts_start);
++    if (timeout->rollover)
++        return (ts >= timeout->ts_end) && (ts < timeout->ts_start);
++    return ts >= timeout->ts_end;
+ }
+ 
+ void pb_delay_us(unsigned int us)
