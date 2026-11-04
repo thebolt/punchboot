@@ -17,6 +17,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 
 #include <cmocka.h>
 
@@ -411,14 +412,18 @@ static void test_initrd_above_4g(void **state)
     *bpak_get_meta_ptr(hdr, meta, uint64_t) = start;
     assert_int_equal(boot_driver_linux_prepare(hdr, boot_part_uu), PB_OK);
 
-    const fdt64_t *val = fdt_getprop(dtb, chosen(), "linux,initrd-start", &len);
+    /* Properties are only 4 byte aligned */
+    fdt64_t cell;
+    const void *val = fdt_getprop(dtb, chosen(), "linux,initrd-start", &len);
     assert_non_null(val);
     assert_int_equal(len, 8);
-    assert_int_equal(fdt64_to_cpu(*val), start);
+    memcpy(&cell, val, sizeof(cell));
+    assert_int_equal(fdt64_to_cpu(cell), start);
     val = fdt_getprop(dtb, chosen(), "linux,initrd-end", &len);
     assert_non_null(val);
     assert_int_equal(len, 8);
-    assert_int_equal(fdt64_to_cpu(*val), start + RAMDISK_SIZE);
+    memcpy(&cell, val, sizeof(cell));
+    assert_int_equal(fdt64_to_cpu(cell), start + RAMDISK_SIZE);
 }
 
 /* libfdt reads and patches the tree up to its total size: a tree larger
