@@ -93,6 +93,8 @@ How to run and add proofs: `tests/cbmc/README.md`.
 | `timestamp` | `src/timestamp.c` | The table is never overrun; `ts_total` is the first to last difference, 0 without timestamps (F-173) | table of 2, ≤ 3 calls | | 0 s / 0 s |
 | `device-uuid` | `src/device_uuid.c`, `uuid3.c` | A version 3 RFC 4122 UUID, the same on every call after the first success; the platform's error returned, nothing cached after a failure | two calls; the platform keeps to its length contract | | 1 s / 1 s |
 | `console` | `src/console.c` | The early RAM log replay reads only inside the log and writes out exactly the bytes still in it that were not muted, in order, each once; after `console_init` the UART gets output exactly when not muted | ≤ 5 steps of ≤ 3 bytes or a (un)mute, a RAM log of ≤ 8 bytes at any position | | 97 s / 108 s |
+| `main` | `src/main.c`, `src/self_test.c` | Nothing boots unless plat and board init succeeded; self tests between them and the boot; command mode then a reset after a returning boot; every self test once, in order, after a watchdog kick | a firmware build with self tests (jiffy), ≤ 2 tests | | 1 s / 1 s |
+| `usbd` | `src/drivers/usb/usbd.c`, `pb_dev_cls.c` string descriptors | For any setup packets (pre-auth), during enumeration and mid-transfer: every EP0 answer inside its descriptor and at most `wLength` (F-175); SET_CONFIGURATION gets the interface's endpoints; an interrupted transfer restarts as it was; the serial number from a written UUID (F-176); connected only once configured | the descriptor layout and lengths of `pb_dev_cls.c`, a HAL with every op (all three UDC drivers) | | 17 s / 17 s |
 | `ih-auth` | `boot_image_auth_header` (pre-auth) | OK only when dsa_verify verified; the header's signature, digest length of its hash kind; the whole header hashed once with the signature zeroed; the key only if not revoked | any header | | 7 s |
 | `ih-verify-parts` | `boot_image_verify_parts` | OK means every region (stack, data, bss, code, no_init, any layout) was checked with the part's whole range, which does not wrap, and where the code found a region clear it is (F-065) | one part, its load address in the first metadata entry; `CHECK_OVERLAP` records its range and checks each call | | 10 s / 25 s |
 | `ih-verify-parts-read` | `part_load_addr` | For any metadata layout: OK means the pb-load-addr entry is a u64, the address is its value, and the part fits above it (F-065) | one part, 4 metadata entries | | 240 s / 260 s |
@@ -147,8 +149,12 @@ From the approved plan (2026-11-02), ordered by attacker reachability:
   (confirmed F-070, F-074; found F-159, F-161, F-164..F-166). The boot drivers `linux.c` and
   `atf.c` (found F-168); libfdt is in the trust boundary (signed input only).
 - **The rest of `src/*.c`:** done: `delay.c` (found F-172), `timestamp.c` (F-173),
-  `device_uuid.c`, `console.c`. Not proven: `main.c` and `self_test.c` (they only call the
-  other modules in order), the drivers and platform code (hardware).
+  `device_uuid.c`, `console.c`, `main.c` and `self_test.c` (`main`).
+- **Drivers:** the USB device core and class (`usbd`, found F-175, F-176), which handle setup
+  packets from any host. The UDC, MMC, UART, fuse and crypto drivers program hardware and are not
+  proven. Postponed: the i.MX6UL ROM log decoder (`rom_log.c`, jiffy's `dump-rom-log`): with the
+  firmware `snprintf` even one event line is too big for CBMC 6.6 (over 16k objects, then
+  timeouts); by reading, every line is under 72 of the 128 bytes it is given.
 - **Phase 4:** host-side parsing in `tools/punchboot` done (`host-*`, found F-169; host mode in
   `Makefile.common`). Sequence properties: `rot-imx6ul-seq` runs revoke, status and lock in any
   order on the same fuses. The others follow from the per-call proofs by induction, because each
