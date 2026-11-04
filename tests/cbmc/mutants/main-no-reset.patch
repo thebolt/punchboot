@@ -1,0 +1,12 @@
+# proof: main
+# Command mode returns without a reset
+--- a/src/main.c
++++ b/src/main.c
+@@ -53,7 +53,6 @@
+ #ifdef CONFIG_CM
+     cm_run();
+ #endif
+-    plat_reset();
+ }
+ 
+ #ifndef CONFIG_ARCH_HOST

@@ -1,0 +1,14 @@
+# proof: main
+# A failed board init does not stop the boot
+--- a/src/main.c
++++ b/src/main.c
+@@ -36,9 +36,6 @@
+ 
+     rc = plat_board_init();
+ 
+-    if (rc != PB_OK)
+-        goto enter_command_mode;
+-
+ #ifdef CONFIG_SELF_TEST
+     self_test();
+ #endif
