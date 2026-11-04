@@ -143,8 +143,9 @@ From the approved plan (2026-11-02), ordered by attacker reachability:
   `atf.c` (found F-168); libfdt is in the trust boundary (signed input only).
 - **Phase 4:** host-side parsing in `tools/punchboot` done (`host-*`, found F-169; host mode in
   `Makefile.common`). Left: sequence properties, harnesses reused as fuzz targets.
-- Not yet done from Phase 0's surroundings: a CI gate that a PR touching a proven file also
-  touches its proof, and cbmc-viewer reports.
+- The CI gate (`scripts/ci/cbmc_gate.py`): a PR that changes a proven file changes one of its
+  proofs too, or has a `CBMC-waiver: <why>` line in a commit message. `--list` prints the map.
+  It runs in the CBMC job, so it is not blocking yet either. Not done: cbmc-viewer reports.
 
 Findings from proofs go in `findings.md`, each fix in its own `bugfix:` commit with the proof as
 its regression test. Fixes that change accepted images or wire behaviour need a decision first

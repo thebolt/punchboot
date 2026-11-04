@@ -60,7 +60,7 @@ F-148..F-169; all of them and F-001,
 F-006, F-055, F-066, F-070, F-074, F-075, F-089 are fixed, each a `bugfix:` commit with its proof
 as the test (D-023 fail-closed gate, D-024 erase and GPT, D-025 malformed signed headers). F-065
 has hardening left that is not a parser bug. Open from the host review: F-170 (USB short
-reads, needs a hardware check), the rest of F-171. All proofs pass with no expected failures, every
+reads, needs a hardware check). All proofs pass with no expected failures, every
 mutant is caught; host tests pass, also in the dev container with cbmc 6.6.0.
 
 **Hard rule (D-008):** never break wire or bpak compatibility. See `compatibility.md`.
