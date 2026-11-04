@@ -150,7 +150,13 @@ int boot_driver_atf_prepare(struct bpak_header *hdr, uuid_t boot_part_uu)
         return -PB_ERR_BAD_META;
     }
 
-    atf_bl33_info.image_size = bpak_part_size(ph);
+    /* ATF takes a 32 bit image size */
+    if (bpak_part_size(ph) > UINT32_MAX) {
+        LOG_ERR("BL33 is larger than 4 GiB");
+        return -PB_ERR_BAD_META;
+    }
+
+    atf_bl33_info.image_size = (uint32_t)bpak_part_size(ph);
 
     LOG_INFO("BL33: %" PRIxPTR " (%u bytes)", atf_bl33_info.image_base, atf_bl33_info.image_size);
 
@@ -169,7 +175,13 @@ int boot_driver_atf_prepare(struct bpak_header *hdr, uuid_t boot_part_uu)
             return -PB_ERR_BAD_META;
         }
 
-        atf_bl32_info.image_size = bpak_part_size(ph);
+        /* ATF takes a 32 bit image size */
+        if (bpak_part_size(ph) > UINT32_MAX) {
+            LOG_ERR("BL32 is larger than 4 GiB");
+            return -PB_ERR_BAD_META;
+        }
+
+        atf_bl32_info.image_size = (uint32_t)bpak_part_size(ph);
 
         LOG_INFO(
             "BL32: %" PRIxPTR " (%u bytes)", atf_bl32_info.image_base, atf_bl32_info.image_size);
