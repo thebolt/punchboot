@@ -1,0 +1,13 @@
+# proof: console
+# Muted output reaches the UART after console_init
+--- a/src/console.c
++++ b/src/console.c
+@@ -111,7 +111,7 @@
+ #endif
+     /* Before console_init(), on boards without a UART (NULL ops) and while
+      * muted, the output only goes to the RAM log */
+-    if (!uart_muted && console_has_output()) {
++    if (console_has_output()) {
+         ops->putc(base, c);
+     }
+ }

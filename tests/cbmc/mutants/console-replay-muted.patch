@@ -1,0 +1,13 @@
+# proof: console
+# The replay ignores where a muted message starts and writes it out
+--- a/src/console.c
++++ b/src/console.c
+@@ -45,7 +45,7 @@
+             r++;
+ 
+         if (r < no_of_early_muted) {
+-            if (early_muted[r].start <= pos) {
++            if (false) {
+                 pos = early_muted[r].end;
+                 continue;
+             }
