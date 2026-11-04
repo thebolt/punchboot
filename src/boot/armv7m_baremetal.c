@@ -20,7 +20,7 @@ int boot_driver_armv7m_baremetal_init(const struct boot_driver_armv7m_baremetal_
     cfg = cfg_in;
 
     if (cfg->image_base_address == 0 || cfg->image_size < sizeof(struct bpak_header) ||
-        cfg->boot_partition_id == 0)
+        cfg->image_size > UINTPTR_MAX - cfg->image_base_address || cfg->boot_partition_id == 0)
         return -PB_ERR_PARAM;
 
     return PB_OK;
@@ -37,7 +37,18 @@ int boot_driver_armv7m_baremetal_prepare(struct bpak_header *hdr, uuid_t boot_pa
             break;
 
         if (p->id == cfg->boot_partition_id) {
-            jump_part_offset = bpak_part_offset(hdr, p) - sizeof(struct bpak_header);
+            /* The part must be inside the image, before its header (D-025) */
+            uint64_t offset = (uint64_t)bpak_part_offset(hdr, p) - sizeof(struct bpak_header);
+            uint64_t size = (p->flags & BPAK_FLAG_TRANSPORT) ? p->transport_size
+                                                             : p->size + p->pad_bytes;
+            uint64_t data_size = cfg->image_size - sizeof(struct bpak_header);
+
+            if (offset > data_size || size > data_size - offset) {
+                LOG_ERR("Boot part is outside the image");
+                return -PB_ERR_BAD_META;
+            }
+
+            jump_part_offset = (uintptr_t)offset;
             found_jump = true;
             break;
         }

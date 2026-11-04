@@ -247,6 +247,8 @@ address as a u64, and real parts are far below 2^63 bytes), so every image a rel
 still accepted (D-008; dtc writes `totalsize` as the size of the blob and bpak only pads after
 it). A 32-bit device still accepts a bpak with parts over 4 GiB in command
 mode; only booting one is refused.
+The Cortex-M bare-metal driver refuses a boot part outside its configured image (F-178); no
+board uses it, so no accepted image changes.
 
 ## D-026: The host API does not trust the device's sizes (2026-11-04)
 
