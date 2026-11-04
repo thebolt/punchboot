@@ -33,6 +33,9 @@
 #   HOST=1     Host tool code (tools/punchboot): adds the host functions it uses
 #              (tests/cbmc/host), the host's signed char and a malloc that can
 #              return NULL
+#   WERROR     The harness compiles with -Werror (an implicit declaration makes
+#              CBMC assume an int return). A proof that includes a file goto-cc
+#              warns about for a CBMC limitation sets it empty; say which warning.
 #   TIMEOUT    Seconds per cbmc run (default 600). A slow proof sets a longer
 #              one with ?=, so the environment still overrides it.
 #
@@ -50,6 +53,7 @@ CBMC      ?= cbmc
 GOTO_CC   ?= goto-cc
 GOTO_INSTRUMENT ?= goto-instrument
 TIMEOUT   ?= 600
+WERROR    ?= -Werror
 
 ifeq ($(WORD),32)
 LIBC_ARCH := aarch32
@@ -132,7 +136,7 @@ space := $(subst ,, )
 
 $(OUT).gb: harness.c $(SOURCES) $(MODELS) $(HDRS) $(CONFIG_H)
 	mkdir -p $(BUILD)
-	$(GOTO_CC) -m$(WORD) -std=gnu99 $(INC) $(DEFS) -Werror -c harness.c -o $(OUT).harness.o
+	$(GOTO_CC) -m$(WORD) -std=gnu99 $(INC) $(DEFS) $(WERROR) -c harness.c -o $(OUT).harness.o
 	$(GOTO_CC) -m$(WORD) -std=gnu99 $(INC) $(DEFS) harness.c $(SOURCES) $(MODELS) -o $@
 	$(call abstract,$@)
 

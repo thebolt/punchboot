@@ -1,0 +1,13 @@
+# proof: usbd
+# The configuration descriptor is sent with the host's wLength
+--- a/src/drivers/usb/usbd.c
++++ b/src/drivers/usb/usbd.c
+@@ -157,7 +157,7 @@
+             length = MIN(setup->wLength, (uint16_t)sizeof(cls_config->desc->device));
+             rc = ep0_tx(&cls_config->desc->device, length);
+         } else if (setup->wValue == 0x0200) {
+-            length = MIN(setup->wLength, cls_config->desc->config.wTotalLength);
++            length = setup->wLength;
+             rc = ep0_tx(&cls_config->desc->config, length);
+         } else if (setup->wValue == 0x0A00) {
+             length = MIN(setup->wLength, (uint16_t)cls_config->desc->interface.bLength);

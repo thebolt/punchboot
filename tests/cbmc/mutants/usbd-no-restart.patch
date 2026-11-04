@@ -1,0 +1,15 @@
+# proof: usbd
+# A setup packet in the middle of a transfer cancels it and does not restart it
+--- a/src/drivers/usb/usbd.c
++++ b/src/drivers/usb/usbd.c
+@@ -346,10 +346,6 @@
+             return rc;
+ 
+         /* Restart current xfer */
+-        rc = hal_ops->xfer_start(cur_xfer_ep, cur_xfer_buf, cur_xfer_length);
+-
+-        if (rc != PB_OK)
+-            return rc;
+     }
+ 
+     return hal_ops->xfer_complete(cur_xfer_ep);

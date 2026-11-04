@@ -1,0 +1,14 @@
+# proof: usbd
+# GET_STATUS sends 2 bytes whatever wLength asks for (F-175)
+--- a/src/drivers/usb/usbd.c
++++ b/src/drivers/usb/usbd.c
+@@ -211,8 +211,7 @@
+     } break;
+     case USB_GET_STATUS: {
+         LOG_DBG("Get status");
+-        length = MIN(setup->wLength, (uint16_t)sizeof(device_status));
+-        rc = ep0_tx(&device_status, length);
++        rc = ep0_tx(&device_status, sizeof(device_status));
+     } break;
+     case USB_GET_VENDOR: {
+         LOG_DBG("Get vendor specific descriptor");
