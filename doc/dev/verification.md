@@ -72,6 +72,7 @@ How to run and add proofs: `tests/cbmc/README.md`.
 | `slc` | `src/slc.c` | Without a config or callback: NOT_SUPPORTED, no NULL call | none | | 1 s / 1 s |
 | `rot` | `src/rot.c` | `rot_init` accepts exactly a matching key map; status/revoke act on the requested key; `rot_get_dsa_key` only returns a key the board reports OK, with its data and kind; no error codes as counts or ids (F-153) | 3 keys | | 1 s / 1 s |
 | `rot-imx6ul` | i.MX6UL `rot_helpers.c`, `slc_helpers.c` | Revoked key reads as revoked; revoke burns only the key's bit; LOCKED exactly when HAB reports secure boot; lock fuse burnt only from an unlocked state | param1 < 4 | | 1 s / 1 s |
+| `rot-imx6ul-seq` | i.MX6UL `rot_helpers.c`, `slc_helpers.c` | Over any sequence of revokes, key status reads and locks on the same fuses: a revoked key never reads OK again, the lock fuse stays burnt | 3 steps, 4 SRK slots, any fuses at the start | | 1 s / 1 s |
 | `rot-imx8x` | i.MX8X `rot_helpers.c`, `slc_helpers.c` | REVOKED exactly when the key's SECO bit is set; LOCKED exactly when SECO reports OEM closed; fail closed when SECO can't be asked; forward only with the SRK fused | param1 < 4 | | 1 s / 1 s |
 | `slc-imxrt` | i.MX RT `slc_helpers.c`, `rot_helpers.c` | LOCKED exactly when SEC_CONFIG is set; NOT_CONFIGURED means no SRK bits; no revocation support | none | | 1 s / 1 s |
 | `libc-*` (18 proofs) | Every function in `src/lib/libc/` string.h: `memcpy` (`string.c` and the unused `memcpy.c`), `memmove`, `memset`, `memcmp`, `memchr`, `strlen`, `strnlen`, `strcmp`, `strncmp` (`strcmp.c` and the unused `strncmp.c`), `strchr`, `strrchr`, `strcpy`, `strncpy`, `strlcpy`, `strspn`, `strcspn` | The definition in C11 7.24 (POSIX for `strnlen`, `strlcpy`), clause cited in each harness: results, what is written and what is left alone, no access outside what the standard lets the function touch | buffers ≤ 6 bytes | | ≤ 3 s each, `memmove` 45 s |
@@ -88,6 +89,10 @@ How to run and add proofs: `tests/cbmc/README.md`.
 | `ab-state` | `src/boot/ab_state.c` | A valid state after init for any disk state; boots A, B or nothing; an unverified system only with an attempt left (counter goes down by one) or by the speculative rollback; board registers inside the array | any state, any CRC | | 2 s |
 | `ramlog` | `src/ramlog.c` | Nothing before init; putc at head % size; read copies exactly what is in the ring after offset | 1 KiB log, reads up to 64 bytes | | 6 s / 10 s |
 | `tzc380` | `src/drivers/tzc/tzc380.c` | A region is programmed only with a valid number, power-of-two size >= 32 KiB inside the address width, aligned base, SP bits only; exactly base and attribute registers | any config register | | 1 s |
+| `delay` | `src/delay.c` | Init refuses exactly 0 and 0xffffffff; a timeout expires exactly when its time has passed, for any start tick, also when the tick wrapped between polls (F-172); `pb_delay_us` returns after the delay | one poll < 2^32 us after the init; delay ≤ 2 tick steps | | 1 s / 1 s |
+| `timestamp` | `src/timestamp.c` | The table is never overrun; `ts_total` is the first to last difference, 0 without timestamps (F-173) | table of 2, ≤ 3 calls | | 0 s / 0 s |
+| `device-uuid` | `src/device_uuid.c`, `uuid3.c` | A version 3 RFC 4122 UUID, the same on every call after the first success; the platform's error returned, nothing cached after a failure | two calls; the platform keeps to its length contract | | 1 s / 1 s |
+| `console` | `src/console.c` | The early RAM log replay reads only inside the log and writes out exactly the bytes still in it that were not muted, in order, each once; after `console_init` the UART gets output exactly when not muted | ≤ 5 steps of ≤ 3 bytes or a (un)mute, a RAM log of ≤ 8 bytes at any position | | 97 s / 108 s |
 | `ih-auth` | `boot_image_auth_header` (pre-auth) | OK only when dsa_verify verified; the header's signature, digest length of its hash kind; the whole header hashed once with the signature zeroed; the key only if not revoked | any header | | 7 s |
 | `ih-verify-parts` | `boot_image_verify_parts` | OK means every region (stack, data, bss, code, no_init, any layout) was checked with the part's whole range, which does not wrap, and where the code found a region clear it is (F-065) | one part, its load address in the first metadata entry; `CHECK_OVERLAP` records its range and checks each call | | 10 s / 25 s |
 | `ih-verify-parts-read` | `part_load_addr` | For any metadata layout: OK means the pb-load-addr entry is a u64, the address is its value, and the part fits above it (F-065) | one part, 4 metadata entries | | 240 s / 260 s |
@@ -141,8 +146,16 @@ From the approved plan (2026-11-02), ordered by attacker reachability:
 - **Phase 3:** done: `boot.c`, the auth gate, one proof per command handler, crypto dispatch
   (confirmed F-070, F-074; found F-159, F-161, F-164..F-166). The boot drivers `linux.c` and
   `atf.c` (found F-168); libfdt is in the trust boundary (signed input only).
+- **The rest of `src/*.c`:** done: `delay.c` (found F-172), `timestamp.c` (F-173),
+  `device_uuid.c`, `console.c`. Not proven: `main.c` and `self_test.c` (they only call the
+  other modules in order), the drivers and platform code (hardware).
 - **Phase 4:** host-side parsing in `tools/punchboot` done (`host-*`, found F-169; host mode in
-  `Makefile.common`). Left: sequence properties, harnesses reused as fuzz targets.
+  `Makefile.common`). Sequence properties: `rot-imx6ul-seq` runs revoke, status and lock in any
+  order on the same fuses. The others follow from the per-call proofs by induction, because each
+  starts from any state: the fuse stub only adds bits (revocation and locking are monotonic on
+  every platform), `ab-state` starts from any state on disk and never wraps the counter, and only
+  `cmd_auth` writes `authenticated` (`cm-auth`; the gate is `cm-gate`). `authenticated` is kept
+  over a transport restart (F-174, open). Left: harnesses reused as fuzz targets.
 - Not done: cbmc-viewer reports. No CI job or gate: the proofs are run by hand for now.
 
 Findings from proofs go in `findings.md`, each fix in its own `bugfix:` commit with the proof as

@@ -51,17 +51,18 @@ the host half of 4 are done (`compatibility.md`, Guards).
   (D-020, temporary). Bugs found on the way: F-143, F-144, F-147 (open). Left: de-duplication
   F-145 (porting API part on hold), ATF F-146, boards F-033/F-051.
 
-**CBMC (branch `cbmc`, D-022):** 82 proofs in `tests/cbmc` at 32 and 64 bit (`verification.md`):
-the pre-auth parsers (bpak, der, gpt, signature), the root of trust and SLC, every libc string
-function against C11, bio, ab_state, ramlog, tzc380, image verification, the boot flow, the
-command mode gate and handlers, crypto dispatch, the Linux and ATF boot drivers (`boot-atf` 64
-bit only), and the host API against a malicious device (`host-*`, D-026). They found
-F-148..F-169; all of them and F-001,
-F-006, F-055, F-066, F-070, F-074, F-075, F-089 are fixed, each a `bugfix:` commit with its proof
-as the test (D-023 fail-closed gate, D-024 erase and GPT, D-025 malformed signed headers). F-065
-has hardening left that is not a parser bug. Open from the host review: F-170 (USB short
-reads, needs a hardware check). All proofs pass with no expected failures, every
-mutant is caught; host tests pass, also in the dev container with cbmc 6.6.0.
+**CBMC (branch `cbmc`, D-022):** 87 proofs in `tests/cbmc` at 32 and 64 bit (`verification.md`):
+the pre-auth parsers (bpak, der, gpt, signature), the root of trust and SLC (also over a
+sequence of operations on i.MX6UL), every libc string function against C11, bio, ab_state,
+ramlog, tzc380, image verification, the boot flow, the command mode gate and handlers, crypto
+dispatch, the Linux and ATF boot drivers (`boot-atf` 64 bit only), timeouts, timestamps, the
+device UUID, the console's RAM log replay, and the host API against a malicious device (`host-*`,
+D-026). They found F-148..F-169, F-172, F-173; all of them and F-001, F-006, F-055, F-066, F-070,
+F-074, F-075, F-089 are fixed, each a `bugfix:` commit with its proof as the test (D-023
+fail-closed gate, D-024 erase and GPT, D-025 malformed signed headers). Open: F-065 hardening
+that is not a parser bug (needs decisions), F-170 (USB short reads, needs hardware), F-174
+(authentication kept over a transport restart, a question for Jonas). All proofs pass, every
+mutant is caught; run by hand, not in CI. Host tests pass, also in the dev container.
 
 **Hard rule (D-008):** never break wire or bpak compatibility. See `compatibility.md`.
 
