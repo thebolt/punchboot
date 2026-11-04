@@ -80,7 +80,7 @@ How to run and add proofs: `tests/cbmc/README.md`.
 | `libc-snprintf-{s,u,d,x,08x}` | `snprintf` | C11 7.21.6.5: at most n - 1 characters and a NUL, returns the full length, the text the conversion defines | n ≤ 12 | | see CI |
 | `libc-snprintf-unsupported` | `snprintf` | Returns for `%c`, `%X`, `%zu`, `%2u` | n ≤ 8 | | 1 s |
 | `uuid-parse` | `uuid_parse` | Accepts exactly the canonical 8-4-4-4-12 hex form; the bytes are the hex digits in order | strings ≤ 38 bytes | | 80 s |
-| `uuid-roundtrip` | `uuid_unparse`, `uuid_parse` (with the firmware `snprintf`, `strtoul`) | Any UUID unparses to a 36 character lower case canonical string and parses back to itself | none | | 500-2050 s (timeout 3600 s) |
+| `uuid-roundtrip` | `uuid_unparse`, `uuid_parse` (with the firmware `snprintf`, `strtoul`) | Any UUID unparses to a 36 character lower case canonical string and parses back to itself | none | | 500-2050 s / 500-3150 s (timeout 5400 s) |
 | `uuid-pack` | uuid pack/unpack, compare, copy, clear, is_null | unpack∘pack is the identity; compare orders like the bytes; copy, clear, is_null | none | | 1 s |
 | `bio`, `bio-4k` | `src/bio.c` | Read, write and erase reach the HAL only inside the device with the absolute LBA (F-055); sizes and getters exact (F-157); invalid handles rejected; lookup by UUID | one device, any LBAs, 512 / 4096 byte blocks | | 70 s / 110-190 s |
 | `bio-child` | `bio_allocate_parent` | A partition lies inside its disk and has its flags | a fixed disk | | see CI |

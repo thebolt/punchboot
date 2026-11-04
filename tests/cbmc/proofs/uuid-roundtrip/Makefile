@@ -12,9 +12,9 @@ EXTRA_INC = -I $(ROOT)/src/lib -I $(ROOT)/src/arch/$(if $(filter 64,$(WORD)),arm
 # the libc relies on size_t wrapping (while (len--)). The functional
 # properties in the harness pin the results down instead.
 CHECK_FLAGS_OFF = --unsigned-overflow-check --conversion-check
-# 500-2050 s: the digit count of each conversion is symbolic, so every later
+# 500-3150 s: the digit count of each conversion is symbolic, so every later
 # write is at a symbolic offset
-TIMEOUT ?= 3600
+TIMEOUT ?= 5400
 include ../../Makefile.common
 
 # unparse.c is included by the harness (see there)
