@@ -74,6 +74,22 @@ int imx8x_fuse_write_srk(const struct imx8x_srk_fuses *fuses)
             return -PB_ERR_PARAM;
     }
 
+    /* Never change an SRK that is already fused (fuses only set bits) */
+    for (unsigned int n = 0; n < 16; n++) {
+        uint32_t val;
+
+        rc = imx8x_fuse_read(730 + n, &val);
+
+        if (rc != PB_OK)
+            return rc;
+
+        if (val != 0 && val != fuses->srk[n]) {
+            LOG_ERR(
+                "Trying to change already fused SRK%u from 0x%x to 0x%x", n, val, fuses->srk[n]);
+            return -PB_ERR_MEM;
+        }
+    }
+
     for (unsigned int n = 0; n < 16; n++) {
         LOG_INFO("Fusing SRK%i, value=0x%x", n, fuses->srk[n]);
         rc = imx8x_fuse_write(730 + n, fuses->srk[n]);
@@ -90,7 +106,8 @@ bool imx8x_is_srk_fused(void)
     uint32_t val;
 
     for (unsigned int n = 0; n < 16; n++) {
-        (void)imx8x_fuse_read(730 + n, &val);
+        if (imx8x_fuse_read(730 + n, &val) != PB_OK)
+            return false;
 
         if (val != 0)
             return true;
