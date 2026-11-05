@@ -19,7 +19,9 @@
  *    and hash_final was called.
  * Assumptions: at most 2 parts in use, each at most 3 chunks; the load
  * addresses are any 32-bit values (the memory behind them is not modelled).
- * Stubs: crypto (stubs/crypto.c), read_f records its arguments.
+ * Stubs: crypto (stubs/crypto.c), read_f records its arguments. The timer
+ * stands still: the load times only go into a debug log line, and that
+ * arithmetic is all unsigned (a wrapped tick difference is still right).
  */
 
 #include <boot/image_helpers.h>
@@ -27,6 +29,7 @@
 #include <common.h>
 #include <pb/crypto.h>
 #include <pb/pb.h>
+#include <pb/plat.h>
 #include <pb/rot.h>
 
 extern bool pb_dsa_called;
@@ -82,6 +85,11 @@ static int64_t read_off[MAX_READS];
 static size_t read_len[MAX_READS];
 static uintptr_t read_buf[MAX_READS];
 static bool read_failed;
+
+unsigned int plat_get_us_tick(void)
+{
+    return 0;
+}
 
 static int read_f(int64_t offset, size_t length, void *buf)
 {
