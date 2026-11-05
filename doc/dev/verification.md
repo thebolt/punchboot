@@ -91,16 +91,15 @@ How to run and add proofs: `tests/cbmc/README.md`.
 | `ramlog` | `src/ramlog.c` | Nothing before init; putc at head % size; read copies exactly what is in the ring after offset | 1 KiB log, reads up to 64 bytes | | 6 s / 10 s |
 | `tzc380` | `src/drivers/tzc/tzc380.c` | A region is programmed only with a valid number, power-of-two size >= 32 KiB inside the address width, aligned base, SP bits only; exactly base and attribute registers | any config register | | 1 s |
 | `delay` | `src/delay.c` | Init refuses exactly 0 and 0xffffffff; a timeout expires exactly when its time has passed, for any start tick, also when the tick wrapped between polls (F-172); `pb_delay_us` returns after the delay | one poll < 2^32 us after the init; delay ≤ 2 tick steps | | 1 s / 1 s |
-| `timestamp` | `src/timestamp.c` | The table is never overrun; `ts_total` is the first to last difference, 0 without timestamps (F-173) | table of 2, ≤ 3 calls | | 0 s / 0 s |
 | `device-uuid` | `src/device_uuid.c`, `uuid3.c` | A version 3 RFC 4122 UUID, the same on every call after the first success; the platform's error returned, nothing cached after a failure | two calls; the platform keeps to its length contract | | 1 s / 1 s |
 | `console` | `src/console.c` | The early RAM log replay reads only inside the log and writes out exactly the bytes still in it that were not muted, in order, each once; after `console_init` the UART gets output exactly when not muted | ≤ 5 steps of ≤ 3 bytes or a (un)mute, a RAM log of ≤ 8 bytes at any position | | 100-145 s / 110-155 s |
-| `main` | `src/main.c`, `src/self_test.c` | Nothing boots unless plat and board init succeeded; self tests between them and the boot; command mode then a reset after a returning boot; every self test once, in order, after a watchdog kick | a firmware build with self tests (jiffy), ≤ 2 tests | | 1 s / 1 s |
+| `main` | `src/main.c` | Nothing boots unless plat and board init succeeded; command mode then a reset after a returning boot or a failed init; the RAM log first | a firmware build (jiffy) | | 1 s / 1 s |
 | `usbd` | `src/drivers/usb/usbd.c`, `pb_dev_cls.c` string descriptors | For any setup packets (pre-auth), during enumeration and mid-transfer: every EP0 answer inside its descriptor and at most `wLength` (F-175); SET_CONFIGURATION gets the interface's endpoints; an interrupted transfer restarts as it was; the serial number from a written UUID (F-176); connected only once configured | the descriptor layout and lengths of `pb_dev_cls.c`, a HAL with every op (all three UDC drivers) | | 17 s / 17 s |
 | `static-ptbl` | `src/drivers/partition/static.c` (the i.MX RT NOR table) | NULL table and invalid parent refused; on OK one partition per entry in order, starting at `first_lba` or after the previous one, of exactly the entry's size, not overlapping (F-177) | ≤ 3 entries, any values; 512 byte blocks; `bio_allocate_parent` by its contract (`bio-child`) | | 3 s / 8 s |
 | `ih-auth` | `boot_image_auth_header` (pre-auth) | OK only when dsa_verify verified; the header's signature, digest length of its hash kind; the whole header hashed once with the signature zeroed; the key only if not revoked | any header | | 7 s |
 | `ih-verify-parts` | `boot_image_verify_parts` | OK means every region (stack, data, bss, code, no_init, any layout) was checked with the part's whole range, which does not wrap, and where the code found a region clear it is (F-065) | one part, its load address in the first metadata entry; `CHECK_OVERLAP` records its range and checks each call | | 10 s / 25 s |
 | `ih-verify-parts-read` | `part_load_addr` | For any metadata layout: OK means the pb-load-addr entry is a u64, the address is its value, and the part fits above it (F-065) | one part, 4 metadata entries | | 240 s / 260 s |
-| `ih-load` | `boot_image_load_and_hash` | Hashes exactly what was read, chunk by chunk; OK means every chunk read and hashed | 2 parts of up to 3 chunks | | 270-820 s / 555-640 s (timeout 1800 s) |
+| `ih-load` | `boot_image_load_and_hash` | Hashes exactly what was read, chunk by chunk; OK means every chunk read and hashed | 2 parts of up to 3 chunks | | 263 s / 507 s (timeout 1800 s) |
 | `ih-copy` | `boot_image_copy_and_hash` | Copies inside source and destination (F-088); hashes the copy | one part up to 512 bytes, buffers up to 256 | | 5 s |
 | `ih-payload` | `boot_image_verify_payload` | OK only for a known hash kind and a matching digest of its length | any header | | 5 s |
 | `boot-linux` | `boot_driver_linux_prepare` | The kernel, ramdisk and dtb addresses are their u64 load address entries (F-168); libfdt only on the dtb part after the header check, with the tree inside the part; the patched tree is cleaned; initrd cells not truncated | 3 parts and entries at fixed offsets (`stubs/boot_driver.h`), any ids, sizes and config; libfdt as a contract | | 480-600 s / 550-1000 s (timeout 1800 s) |
@@ -110,10 +109,6 @@ How to run and add proofs: `tests/cbmc/README.md`.
 | `cm-gate` | `pb_command_parse` | A command that needs authentication does nothing unauthenticated unless the SLC is a valid unlocked state (fails closed, D-023) | any command bytes and slc; every external call fails | | 1 s |
 | `cm-*` (14 proofs, one per command) | the command handlers in `cm_main.c` | Authenticated, any command bytes, host data and results of the called modules: no undefined behaviour, every transport read and write inside a valid buffer | the called modules as contracts (`stubs/cm_env.c`: bio with 512 byte blocks, up to 17 keys, ramlog), everything else any value | | 4-50 s |
 | `crypto` | `src/crypto.c` | hash calls only between hash_init and hash_final, to the provider that has the algorithm, with the caller's arguments; dsa_verify's result and verified are the provider's, NOT_SUPPORTED without one; tables never overflow | providers with any algorithm bits | | 1 s |
-| `host-api` | the host API calls with one exchange (`tools/punchboot/api_*.c`) | For any bytes a malicious device sends and any transport error: no undefined behaviour, only the caller's buffers; the version, boot and board status end inside the caller's buffer, board command and log read sizes fit it (F-169) | output buffers ≤ 512 bytes | | 158 s / 177 s |
-| `host-part-table` | `pb_api_partition_read_table` | At most the caller's entries, every description terminated, a failed malloc refused (F-169) | ≤ 3 entries | | 43 s / 42 s |
-| `host-part-rw` | `pb_api_partition_write`, `pb_api_partition_read` | No division by the device's buffer count, both terminate, a successful write sent the whole file (F-169) | chunk 0 or ≤ 8 KiB, ≤ 2 partitions of ≤ 3 chunks, file ≤ partition + 1 | | 345-420 s / 355-400 s (timeout 1200 s) |
-| `host-boot-bpak` | `pb_api_boot_bpak_image` | For any file of any size: nothing read outside it, the transfer terminates (F-169) | header + 8 bytes, ≤ 2 parts, 1 metadata entry | | 23 s / 30 s |
 
 Checks turned off: `crc` has no unsigned overflow check (`while (size--)` wraps on purpose). The
 libc and uuid proofs have no unsigned overflow and conversion checks: the code relies on size_t
@@ -133,9 +128,9 @@ What the proofs assume rather than prove. Each stub states its contract in its f
 |---|---|---|
 | String functions in proofs other than libc | Replaced by models | C standard semantics |
 | Mbed TLS, CAAM and other crypto drivers | Out of scope | `stubs/crypto.c`: any result, a digest of the asked length; the dispatch is the `crypto` proof |
-| littlefs, libfdt | Vendored, large | littlefs: not used before an image is verified; libfdt: only on the signed device tree, inside its part (`boot-linux`, `boot-atf`) |
+| libfdt | Vendored, large | Only on the signed device tree, inside its part (`boot-linux`, `boot-atf`) |
 | USB, MMC, UART hardware, SoC code | Hardware | The transport reads into and writes from the buffers it is given (`cm-handlers`) |
-| Host transports (`usb.c`, `socket.c`), the Python wrapper | libusb, CPython | A read fills the whole buffer or fails (`stubs/host_device.h`); `usb.c` does not check the length yet (F-170) |
+| The host tools (`tools/punchboot`) | Python since 3.0.0 (D-021), not C | Not proven; the integration tests and the wire transcripts check them. The C host proofs (`host-*`, F-169) were for 2.x |
 
 ## Plan
 
@@ -151,8 +146,9 @@ From the approved plan (2026-11-02), ordered by attacker reachability:
 - **Phase 3:** done: `boot.c`, the auth gate, one proof per command handler, crypto dispatch
   (confirmed F-070, F-074; found F-159, F-161, F-164..F-166). The boot drivers `linux.c` and
   `atf.c` (found F-168); libfdt is in the trust boundary (signed input only).
-- **The rest of `src/*.c`:** done: `delay.c` (found F-172), `timestamp.c` (F-173),
-  `device_uuid.c`, `console.c`, `main.c` and `self_test.c` (`main`).
+- **The rest of `src/*.c`:** done: `delay.c` (found F-172), `device_uuid.c`, `console.c` and
+  `main.c` (`main`). On 2.x also `timestamp.c` (F-173) and `self_test.c`, both removed in 3.0.0
+  (D-019, D-020).
 - **Drivers:** the USB device core and class (`usbd`, found F-175, F-176), which handle setup
   packets from any host. The static partition table (`static-ptbl`, F-177) and the Cortex-M
   boot driver (`boot-armv7m`, F-178). SRK fusing (`fusebox-imx6ul`, `fusebox-imx8x`, F-179). Not proven: `hab.c` calls the HAB
@@ -163,8 +159,8 @@ From the approved plan (2026-11-02), ordered by attacker reachability:
   proven. Postponed: the i.MX6UL ROM log decoder (`rom_log.c`, jiffy's `dump-rom-log`): with the
   firmware `snprintf` even one event line is too big for CBMC 6.6 (over 16k objects, then
   timeouts); by reading, every line is under 72 of the 128 bytes it is given.
-- **Phase 4:** host-side parsing in `tools/punchboot` done (`host-*`, found F-169; host mode in
-  `Makefile.common`). Sequence properties: `rot-imx6ul-seq` runs revoke, status and lock in any
+- **Phase 4:** on 2.x the C host library was proven against a malicious device (`host-*`, found
+  F-169); 3.0.0 replaced it with Python (D-021), so those proofs are gone. Sequence properties: `rot-imx6ul-seq` runs revoke, status and lock in any
   order on the same fuses. The others follow from the per-call proofs by induction, because each
   starts from any state: the fuse stub only adds bits (revocation and locking are monotonic on
   every platform), `ab-state` starts from any state on disk and never wraps the counter, and only

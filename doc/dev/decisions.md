@@ -252,6 +252,10 @@ board uses it, so no accepted image changes.
 
 ## D-026: The host API does not trust the device's sizes (2026-11-04)
 
+Superseded in 3.0.0 by D-021: the C host library is gone, and the Python host makes the same
+checks (a transfer size of 0, F-077; a bpak file that does not hold its parts). Kept for the
+2.x branch, where the fixes are (`cbmc-2.x`).
+
 The host refuses a device that reports 0 stream buffers or a chunk size of 0, a board status
 that leaves no room for a null character, and a version without one in the response; it
 terminates the strings it returns itself. `pb_api_boot_bpak_image` refuses a bpak file that does

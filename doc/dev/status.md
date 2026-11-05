@@ -1,6 +1,6 @@
 # Status
 
-_Last updated: 2026-11-04_
+_Last updated: 2026-11-05_
 
 ## Current focus
 
@@ -51,19 +51,18 @@ the host half of 4 are done (`compatibility.md`, Guards).
   (D-020, temporary). Bugs found on the way: F-143, F-144, F-147 (open). Left: de-duplication
   F-145 (porting API part on hold), ATF F-146, boards F-033/F-051.
 
-**CBMC (branch `cbmc`, D-022):** 93 proofs in `tests/cbmc` at 32 and 64 bit (`verification.md`):
-the pre-auth parsers (bpak, der, gpt, signature), the root of trust and SLC (also over a
-sequence of operations on i.MX6UL), every libc string function against C11, bio, ab_state,
-ramlog, tzc380, image verification, the boot flow, the command mode gate and handlers, crypto
-dispatch, the Linux, ATF and Cortex-M boot drivers, timeouts, timestamps, the device UUID, the
-console's RAM log replay, USB, SRK fusing, the static partition table, and the host API against
-a malicious device (`host-*`, D-026). They found F-148..F-169, F-172, F-173, F-175..F-179; all of them and
-F-001, F-006, F-055, F-066, F-070, F-074, F-075, F-089 are fixed, each a `bugfix:` commit with its proof as the test (D-023
-fail-closed gate, D-024 erase and GPT, D-025 malformed signed headers). Open: F-065 hardening
-that is not a parser bug (needs decisions), F-170 (USB short reads, needs hardware), F-174
-(authentication kept over a transport restart, a question for Jonas). All proofs pass, every
-mutant is caught (clean full run 2026-11-05: 93 proofs, 75 mutants); run by hand, not in CI, the boot drivers alone
-(4.5 GB each). Host tests pass, also in the dev container.
+**CBMC (branch `cbmc`, on `work-3.0.0`, D-022):** 88 proofs in `tests/cbmc` at 32 and 64 bit
+(`verification.md`): the pre-auth parsers (bpak, der, gpt, signature), the root of trust and SLC,
+every libc string function against C11, bio, ab_state, ramlog, tzc380, image verification, the
+boot flow, the command mode gate and handlers, crypto dispatch, the Linux, ATF and Cortex-M boot
+drivers, timeouts, the device UUID, the console's RAM log replay, USB, SRK fusing and the static
+partition table. They found F-148..F-179; all are fixed, each a `bugfix:` commit with its proof as
+the test (D-023 fail-closed gate, D-024 erase and GPT, D-025 malformed signed headers), or
+obsolete in 3.0.0 (F-169, F-171, F-173: the C host library and `timestamp.c` are gone; F-170 is
+F-141). Also fixed: F-001, F-006, F-055, F-066, F-070, F-074, F-075, F-089. Open: F-065
+hardening that is not a parser bug, F-174 (authentication kept over a transport restart, for
+Jonas). Run by hand, not in CI, the boot drivers alone (4.5 GB each). Full run on
+work-3.0.0 (2026-11-05): all 88 proofs pass, all 64 mutants are killed.
 
 **Hard rule (D-008):** never break wire or bpak compatibility. See `compatibility.md`.
 
@@ -81,15 +80,15 @@ mutant is caught (clean full run 2026-11-05: 93 proofs, 75 mutants); run by hand
    planned in the roadmap, Phase 1.
 3. Compatibility guards: 1, 2 and 4 (host side: transcripts served to the host) are done. Next: 3
    (old PyPI wheels against pb-host), 4's device side (replay the host bytes against pb-host),
-   5 (CODEOWNERS), older bpak CLI images. Then the compat fixes F-075 (erase), F-076 (dont-hash).
+   5 (CODEOWNERS), older bpak CLI images. Then the compat fix F-076 (dont-hash); F-075 (erase) is fixed (D-024).
    `compat-guards` also carries the jiffy HAB signing commits, to be split onto their own branch.
 4. F-049 is fixed: consider `-Werror` for the host build.
    PR #65 (`high-prio-fixes`, replaces PR #64) is merged (2026-10-23): all of `jiffy-fixes`,
    F-084, F-005, F-063, F-094. Next: F-004, F-081.
    Branch `remove-codecov` removes Codecov (D-012); Jonas turns off the Codecov app.
-5. Phase 1: security fixes F-001, F-004, each with a test (F-002 is intended, D-011).
+5. Phase 1: security fix F-004, with a test (F-001 is fixed, F-002 is intended, D-011).
 6. JTAG: `scripts/pbdebug jiffy` (ULINK + OpenOCD + GDB, `build-and-test.md`); `--load` loads pb
-   into RAM. Next: F-090, F-089, F-083, F-078/F-079, F-081, F-084.
+   into RAM. Next: F-090, F-083, F-078/F-079, F-081, F-084.
 
 ## Open questions (for Jonas)
 
