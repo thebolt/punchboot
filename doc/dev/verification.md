@@ -169,8 +169,8 @@ From the approved plan (2026-11-02), ordered by attacker reachability:
   starts from any state: the fuse stub only adds bits (revocation and locking are monotonic on
   every platform), `ab-state` starts from any state on disk and never wraps the counter, and only
   `cmd_auth` writes `authenticated` (`cm-auth`; the gate is `cm-gate`). `authenticated` is kept
-  over a transport restart (F-174, open). Left: harnesses reused as fuzz targets.
-- Not done: cbmc-viewer reports. No CI job or gate: the proofs are run by hand for now.
+  over a transport restart (F-174, open). Not now (decided 2026-11-05): harnesses reused as fuzz targets.
+- Not now (decided 2026-11-05): cbmc-viewer reports. No CI job or gate: the proofs are run by hand for now.
 
 Findings from proofs go in `findings.md`, each fix in its own `bugfix:` commit with the proof as
 its regression test. Fixes that change accepted images or wire behaviour need a decision first
