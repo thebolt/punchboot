@@ -30,9 +30,6 @@
 #              e.g. assert-false: calling any of them fails the proof
 #   MODELS     Models linked into the proof (default: stubs/string_models.c, log.c).
 #              The libc proofs set it empty to verify src/lib/libc itself.
-#   HOST=1     Host tool code (tools/punchboot): adds the host functions it uses
-#              (tests/cbmc/host), the host's signed char and a malloc that can
-#              return NULL
 #   WERROR     The harness compiles with -Werror (an implicit declaration makes
 #              CBMC assume an int return). A proof that includes a file goto-cc
 #              warns about for a CBMC limitation sets it empty; say which warning.
@@ -66,15 +63,13 @@ endif
 MODELS    ?= $(ROOT)/tests/cbmc/stubs/string_models.c $(ROOT)/tests/cbmc/stubs/log.c
 
 # Shared harness headers and stubs: a change rebuilds every proof
-HDRS      := $(wildcard $(ROOT)/tests/cbmc/*.h $(ROOT)/tests/cbmc/stubs/*.c \
-                        $(ROOT)/tests/cbmc/host/*.h)
+HDRS      := $(wildcard $(ROOT)/tests/cbmc/*.h $(ROOT)/tests/cbmc/stubs/*.c)
 
 OUT       := $(BUILD)/$(PROOF)-$(WORD)
 CONFIG_H  := $(BUILD)/config.h
 
 INC := -nostdinc \
        $(PRE_INC) \
-       $(if $(HOST),-I $(ROOT)/tests/cbmc/host -I $(ROOT)/tools/punchboot) \
        -I $(ROOT)/tests/cbmc \
        -I $(ROOT)/include/libc \
        -I $(ROOT)/include/libc/$(LIBC_ARCH) \
@@ -83,10 +78,8 @@ INC := -nostdinc \
        -I $(BUILD) \
        $(EXTRA_INC)
 
-# ARM has an unsigned char (aarch32 and aarch64); goto-cc follows the x86 host,
-# which is also what the host tools mostly run on
-DEFS := $(if $(HOST),-DPB_CBMC_HOST=1,-funsigned-char) -DPB_CBMC=1 -DPB_CBMC_WORD=$(WORD) \
-        -DLOGLEVEL=0 $(EXTRA_DEFS)
+# ARM has an unsigned char (aarch32 and aarch64); goto-cc follows the x86 host
+DEFS := -funsigned-char -DPB_CBMC=1 -DPB_CBMC_WORD=$(WORD) -DLOGLEVEL=0 $(EXTRA_DEFS)
 
 DEFAULT_CHECKS := --bounds-check \
                   --pointer-check \
@@ -108,7 +101,7 @@ CHECK_FLAGS := $(filter-out $(CHECK_FLAGS_OFF),$(DEFAULT_CHECKS))
 # Bitwuzla) were not faster than the default MiniSat (2026-11-03).
 CBMC_FLAGS = --function harness $(CHECK_FLAGS) --unwind $(UNWIND) \
              --unwinding-assertions --no-self-loops-to-assumptions --slice-formula \
-             $(if $(HOST),--malloc-may-fail --malloc-fail-null) $(CBMC_EXTRA)
+             $(CBMC_EXTRA)
 
 .PHONY: all check cover clean
 
@@ -156,8 +149,7 @@ check: $(OUT).gb
 # Vacuity guard: every PB_COVER() goal in the harness must be reachable.
 cover: $(OUT).cover.gb
 	timeout $(TIMEOUT) $(CBMC) $< --function harness --unwind $(UNWIND) \
-	    --cover cover $(if $(HOST),--malloc-may-fail --malloc-fail-null) $(CBMC_EXTRA) 2>&1 | \
-	    tee $(OUT).cover.log | tail -n 3
+	    --cover cover $(CBMC_EXTRA) 2>&1 | tee $(OUT).cover.log | tail -n 3
 	@grep -q "covered" $(OUT).cover.log || { echo "no PB_COVER goals in the harness"; exit 1; }
 	@grep -q "covered (100.0%)" $(OUT).cover.log || \
 	    { grep "coverage.*FAILED" $(OUT).cover.log; echo "unreachable cover goals"; exit 1; }
