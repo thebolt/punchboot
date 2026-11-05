@@ -22,3 +22,10 @@ void console_uart_mute(bool mute)
 {
     (void)mute;
 }
+
+/* The start of every log line (src/log.c): the time, level and function */
+void log_prefix(const char *level, const char *func)
+{
+    (void)level;
+    (void)func;
+}
